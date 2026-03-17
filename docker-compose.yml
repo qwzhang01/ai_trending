@@ -1,0 +1,38 @@
+# ============================================
+# AI Trending — Docker Compose 配置
+# ============================================
+# 用法:
+#   docker compose run --rm ai-trending           # 手动运行一次
+#   docker compose up -d ai-trending-cron         # 启动定时调度（每天早8点）
+#   docker compose logs -f ai-trending-cron       # 查看定时任务日志
+
+services:
+  # 手动运行模式
+  ai-trending:
+    build: .
+    env_file: .env
+    volumes:
+      - ./reports:/app/reports
+      - ./output:/app/output
+      - ./logs:/app/logs
+    restart: "no"
+
+  # 定时调度模式（每天早上 8:00 执行）
+  ai-trending-cron:
+    build: .
+    env_file: .env
+    volumes:
+      - ./reports:/app/reports
+      - ./output:/app/output
+      - ./logs:/app/logs
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🕐 AI Trending 定时调度已启动"
+        echo "   每天 08:00 (UTC+8) 自动执行"
+        # 安装 cron (slim 镜像中可能没有)
+        apt-get update -qq && apt-get install -qq -y cron > /dev/null 2>&1 || true
+        # 写入 crontab: 每天 0:00 UTC = 8:00 UTC+8
+        echo "0 0 * * * cd /app && /app/.venv/bin/python run.py >> /app/logs/cron.log 2>&1" | crontab -
+        cron -f
+    restart: unless-stopped

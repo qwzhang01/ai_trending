@@ -1,0 +1,14 @@
+.env
+__pycache__/
+.DS_Store
+*.pyc
+.venv/
+dist/
+*.egg-info/
+.idea/
+
+# 日志
+logs/
+
+# 运行指标
+metrics/
