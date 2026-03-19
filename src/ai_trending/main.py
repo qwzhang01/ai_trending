@@ -1,101 +1,50 @@
 #!/usr/bin/env python
-"""AI Trending — 每日 AI 开源项目与新闻聚合报告系统.
-
-使用方式:
-    crewai run          — 生成今日 AI 趋势报告
-    crewai train        — 训练 Crew
-    crewai test         — 测试 Crew 执行效果
-"""
-
 import sys
 import warnings
 from datetime import datetime
-
-from ai_trending.crew import AiTrending
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 
 def run():
-    """
-    运行 AI Trending Crew，生成今日报告.
+    """运行 AI Trending — LangGraph 状态机模式.
 
-    流水线:
-    1. GitHub 趋势研究员 → 抓取热门 AI 开源项目
-    2. AI 新闻分析师 → 搜集 AI 行业新闻
-    3. 报告撰写专家 → 整合为完整报告
-    4. 发布专员 → 推送 GitHub + 生成微信文章
+    流水线（LangGraph StateGraph）:
+    1. [collect_github, collect_news] — 并行数据采集
+    2. score_trends — LLM 结构化评分（核心）
+    3. write_report — 基于评分生成 Markdown 日报
+    4. publish — 推送 GitHub + 微信公众号
     """
-    inputs = {
-        "current_date": datetime.now().strftime("%Y-%m-%d"),
+    from ai_trending.graph import get_graph
+
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    initial_state = {
+        "current_date": current_date,
         "author_name": "AI Trending Bot",
+        "github_data": "",
+        "news_data": "",
+        "scoring_result": "",
+        "report_content": "",
+        "publish_results": [],
+        "token_usage": {},
+        "errors": [],
     }
 
     try:
-        result = AiTrending().crew().kickoff(inputs=inputs)
+        graph = get_graph()
+        final_state = graph.invoke(initial_state)
+
+        report = final_state.get("report_content", "")
         print("\n📊 最终报告预览:\n")
-        print(result.raw[:500] if hasattr(result, "raw") else str(result)[:500])
+        print(report[:500] if report else "(无报告内容)")
         print("\n...")
-        return result
+        return final_state
     except Exception as e:
-        raise Exception(f"运行 AI Trending Crew 时出错: {e}")
-
-
-def train():
-    """
-    训练 Crew.
-
-    用法: crewai train -n <iterations> -f <filename>
-    """
-    inputs = {
-        "current_date": datetime.now().strftime("%Y-%m-%d"),
-        "author_name": "AI Trending Bot",
-    }
-    try:
-        AiTrending().crew().train(
-            n_iterations=int(sys.argv[1]),
-            filename=sys.argv[2],
-            inputs=inputs,
-        )
-    except Exception as e:
-        raise Exception(f"训练 Crew 时出错: {e}")
-
-
-def replay():
-    """
-    从指定任务重放执行.
-
-    用法: crewai replay -t <task_id>
-    """
-    try:
-        AiTrending().crew().replay(task_id=sys.argv[1])
-    except Exception as e:
-        raise Exception(f"重放执行时出错: {e}")
-
-
-def test():
-    """
-    测试 Crew 执行效果.
-
-    用法: crewai test -n <iterations> -m <eval_model>
-    """
-    inputs = {
-        "current_date": datetime.now().strftime("%Y-%m-%d"),
-        "author_name": "AI Trending Bot",
-    }
-    try:
-        AiTrending().crew().test(
-            n_iterations=int(sys.argv[1]),
-            eval_llm=sys.argv[2],
-            inputs=inputs,
-        )
-    except Exception as e:
-        raise Exception(f"测试 Crew 时出错: {e}")
+        raise Exception(f"运行 AI Trending 时出错: {e}")
 
 
 def run_with_trigger():
-    """
-    通过触发器运行 Crew（用于外部调度集成）.
+    """通过触发器运行（用于外部调度集成）.
 
     用法: python -m ai_trending.main '{"key": "value"}'
     """
@@ -109,16 +58,25 @@ def run_with_trigger():
     except json.JSONDecodeError:
         raise Exception("无效的 JSON payload")
 
-    inputs = {
-        "crewai_trigger_payload": trigger_payload,
+    from ai_trending.graph import get_graph
+
+    initial_state = {
         "current_date": trigger_payload.get(
             "current_date", datetime.now().strftime("%Y-%m-%d")
         ),
         "author_name": trigger_payload.get("author_name", "AI Trending Bot"),
+        "github_data": "",
+        "news_data": "",
+        "scoring_result": "",
+        "report_content": "",
+        "publish_results": [],
+        "token_usage": {},
+        "errors": [],
     }
 
     try:
-        result = AiTrending().crew().kickoff(inputs=inputs)
-        return result
+        graph = get_graph()
+        final_state = graph.invoke(initial_state)
+        return final_state
     except Exception as e:
-        raise Exception(f"通过触发器运行 Crew 时出错: {e}")
+        raise Exception(f"通过触发器运行时出错: {e}")

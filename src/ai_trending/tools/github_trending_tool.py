@@ -75,6 +75,42 @@ EXCLUDE_REPOS: set[str] = {
     "PromtEngineer/localGPT",
     "microsoft/markitdown",
     "obra/superpowers",
+    # ── 常年霸榜的巨型老项目，Star 极高但无新鲜感 ──
+    "huggingface/transformers",
+    "langchain-ai/langchain",
+    "langgenius/dify",
+    "ggml-org/llama.cpp",
+    "infiniflow/ragflow",
+    "run-llama/llama_index",
+    "microsoft/autogen",
+    "microsoft/graphrag",
+    "langchain-ai/langgraph",
+    "vllm-project/vllm",
+    "sgl-project/sglang",
+    "mem0ai/mem0",
+    "chroma-core/chroma",
+    "milvus-io/milvus",
+    "langfuse/langfuse",
+    "letta-ai/letta",
+    "FlowiseAI/Flowise",
+    "labring/FastGPT",
+    "khoj-ai/khoj",
+    "BerriAI/litellm",
+    "deepset-ai/haystack",
+    "bentoml/OpenLLM",
+    "ray-project/ray",
+    "openvinotoolkit/openvino",
+    "mindsdb/mindsdb",
+    "crewAIInc/crewAI",
+    "Mintplex-Labs/anything-llm",
+    "screenpipe/screenpipe",
+    "open-webui/open-webui",
+    "HKUDS/LightRAG",
+    "getzep/graphiti",
+    "NirDiamant/RAG_Techniques",
+    "NirDiamant/GenAI_Agents",
+    "dair-ai/Prompt-Engineering-Guide",
+    "PaddlePaddle/PaddleOCR",
 }
 
 
@@ -113,37 +149,6 @@ _TREND_KEYWORD_MAP: dict[str, list[str]] = {
     "agent": ["AI agent", "autonomous agent", "agentic", "multi-agent"],
     "machine learning": ["deep learning", "neural network", "diffusion model"],
 }
-
-
-def _build_trend_keywords(query: str) -> list[str]:
-    """根据查询词构建覆盖 AI 技术趋势的关键词列表.
-
-    - 如果 query 命中预设映射，则展开为多个细分关键词
-    - 始终保留原始 query 作为兜底
-    """
-    q_lower = query.lower().strip()
-    keywords: list[str] = []
-
-    # 命中映射则展开
-    for key, expansions in _TREND_KEYWORD_MAP.items():
-        if key in q_lower:
-            keywords.extend(expansions)
-            break
-
-    # 始终保留原始 query
-    if query not in keywords:
-        keywords.insert(0, query)
-
-    # 去重保序
-    seen: set[str] = set()
-    result: list[str] = []
-    for kw in keywords:
-        if kw.lower() not in seen:
-            seen.add(kw.lower())
-            result.append(kw)
-
-    return result
-
 
 class GitHubTrendingInput(BaseModel):
     """Input schema for GitHubTrendingTool."""
@@ -193,26 +198,28 @@ class GitHubTrendingTool(BaseTool):
 
         # ── 分层针对性搜索策略 ──────────────────────────────────
         # 注意：GitHub Search API 不支持括号 + 复杂 OR 组合（会返回 422）
-        # 策略：① topic: 语法（最精准）② 具体项目名 OR 锚点 ③ 简单关键词
+        # 策略：① topic: 语法（最精准）② 具体项目名 OR 锁点 ③ 简单关键词
         search_queries = [
-            # A. 用 topic 标签精准抓取 LLM/Agent 核心框架（GitHub 原生分类，最准）
+            # A. 新兴技术方向：2025年后创建的新项目，捕捉最新趋势
+            f"topic:mcp-server stars:>100 created:>{since_2025}",
+            f"topic:ai-agent stars:>200 created:>{since_2025}",
+            f"topic:llm-inference stars:>300 created:>{since_2025}",
+            f"topic:multimodal stars:>500 created:>{since_2025}",
+
+            # B. 当前最热技术趋势：MCP、多模态、推理加速、长文本记忆
+            f"mcp server in:name,description stars:>300 pushed:>{since_date}",
+            f"long context memory in:name,description stars:>500 pushed:>{since_date}",
+            f"llm serving inference in:name,description stars:>1000 pushed:>{since_date}",
+            f"vision language model in:name,description stars:>1000 pushed:>{since_date}",
+
+            # C. 当前最活跃的核心框架（近期有实质更新）
             f"topic:llm-agent stars:>500 pushed:>{since_date}",
-            f"topic:llm-inference stars:>500 pushed:>{since_date}",
             f"topic:rag stars:>2000 pushed:>{since_date}",
-            f"topic:multi-agent stars:>500 pushed:>{since_date}",
+            f"topic:multi-agent stars:>300 pushed:>{since_date}",
 
-            # B. 具体项目名锚点 OR（不加括号，GitHub API 支持）
-            # 覆盖当前最代表技术趋势的成熟框架
-            f"langgraph OR autogen OR crewai OR dify stars:>5000 pushed:>{since_date}",
-            f"vllm OR sglang OR llama.cpp stars:>5000 pushed:>{since_date}",
-
-            # C. 2025 年后新兴项目（关键词在名称/描述中，星门槛低一些）
-            f"agent framework in:name,description stars:>500 created:>{since_2025}",
-            f"llm inference in:name,description stars:>500 created:>{since_2025}",
-
-            # D. 多模态 + 新兴方向兜底
-            f"multimodal llm stars:>3000 pushed:>{since_date}",
-            f"mcp server in:name,description stars:>200 created:>{since_2025}",
+            # D. 具体项目名锁点：当前行业代表性技术栈
+            f"vllm OR sglang OR ollama stars:>5000 pushed:>{since_date}",
+            f"smolagents OR pydantic-ai OR agno stars:>500 pushed:>{since_date}",
         ]
 
         t0 = time.time()
@@ -276,9 +283,18 @@ class GitHubTrendingTool(BaseTool):
         # 排序：综合「近期活跃度」+「话题新鲜度」+「Star 数」，体现技术趋势感
         # 近 30 天内有更新 +2，命中趋势话题标签 +3，Star 数每千 +1
         TREND_TOPICS = {
-            "agentic", "multi-agent", "llm-inference", "rag", "world-model",
-            "self-improving", "long-term-memory", "mcp", "tool-use",
-            "agent-framework", "autonomous-agent", "llm-serving", "quantization",
+            # Agent 方向
+            "agentic", "multi-agent", "agent-framework", "autonomous-agent", "tool-use",
+            # 推理与服务
+            "llm-inference", "llm-serving", "quantization", "speculative-decoding",
+            # 记忆与上下文
+            "long-term-memory", "rag", "knowledge-graph",
+            # 多模态
+            "multimodal", "vision-language-model", "vlm",
+            # 新兴协议与生态
+            "mcp", "mcp-server", "model-context-protocol",
+            # 自主改进
+            "self-improving", "world-model",
         }
 
         def _trend_score(repo: dict[str, Any]) -> int:

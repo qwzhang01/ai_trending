@@ -1,9 +1,11 @@
 """AI News Tool — 从多个来源抓取最新 AI / LLM / Agent 相关新闻."""
 
+import asyncio
 import os
 import re
 import time
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Type
 
@@ -58,36 +60,13 @@ class AINewsTool(BaseTool):
     args_schema: Type[BaseModel] = AINewsInput
 
     def _run(self, keywords: str = "AI,LLM,AI Agent", top_n: int = 10) -> str:
-        """抓取新闻并返回格式化结果."""
+        """抓取新闻并返回格式化结果（4个渠道异步并发）."""
         keyword_list = [k.strip() for k in keywords.split(",") if k.strip()]
-        all_news: list[dict] = []
-        source_stats: list[str] = []
 
-        # 1. Hacker News — 免费，无需 API Key
-        t0 = time.time()
-        hn_news = self._fetch_hacker_news(keyword_list, top_n)
-        all_news.extend(hn_news)
-        source_stats.append(f"HackerNews: {len(hn_news)} 条 ({time.time() - t0:.1f}s)")
-
-        # 2. Reddit — RSS + Pullpush 双通道（修复 403）
-        t0 = time.time()
-        reddit_news = self._fetch_reddit_news(keyword_list, top_n)
-        all_news.extend(reddit_news)
-        source_stats.append(f"Reddit: {len(reddit_news)} 条 ({time.time() - t0:.1f}s)")
-
-        # 3. newsdata.io (如果有 key)
-        newsdata_api_key = os.environ.get("NEWSDATA_API_KEY", "")
-        if newsdata_api_key:
-            t0 = time.time()
-            newsdata_news = self._fetch_newsdata(keyword_list, top_n, newsdata_api_key)
-            all_news.extend(newsdata_news)
-            source_stats.append(f"newsdata.io: {len(newsdata_news)} 条 ({time.time() - t0:.1f}s)")
-
-        # 4. 知乎 — AI/LLM/Agent 相关话题
-        t0 = time.time()
-        zhihu_news = self._fetch_zhihu_hot(keyword_list, top_n)
-        all_news.extend(zhihu_news)
-        source_stats.append(f"知乎: {len(zhihu_news)} 条 ({time.time() - t0:.1f}s)")
+        # 异步并发抓取所有渠道
+        all_news, source_stats = asyncio.run(
+            self._fetch_all_async(keyword_list, top_n)
+        )
 
         log.info(f"新闻抓取完成 — {' | '.join(source_stats)}")
 
@@ -143,6 +122,62 @@ class AINewsTool(BaseTool):
             output += f"- **时间**: {news.get('time', '未知')}\n\n"
 
         return output
+
+    # ------------------------------------------------------------------
+    # 异步并发入口
+    # ------------------------------------------------------------------
+    async def _fetch_all_async(
+        self, keyword_list: list[str], top_n: int
+    ) -> tuple[list[dict], list[str]]:
+        """并发抓取4个渠道，使用线程池执行同步 IO 任务."""
+        newsdata_api_key = os.environ.get("NEWSDATA_API_KEY", "")
+
+        loop = asyncio.get_event_loop()
+        t_start = time.time()
+
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # 提交4个任务到线程池
+            fut_hn = loop.run_in_executor(
+                executor, self._fetch_hacker_news, keyword_list, top_n
+            )
+            fut_reddit = loop.run_in_executor(
+                executor, self._fetch_reddit_news, keyword_list, top_n
+            )
+            fut_newsdata = (
+                loop.run_in_executor(
+                    executor, self._fetch_newsdata, keyword_list, top_n, newsdata_api_key
+                )
+                if newsdata_api_key
+                else asyncio.sleep(0, result=[])
+            )
+            fut_zhihu = loop.run_in_executor(
+                executor, self._fetch_zhihu_hot, keyword_list, top_n
+            )
+
+            # 并发等待所有结果（单个失败不影响其他）
+            results = await asyncio.gather(
+                fut_hn, fut_reddit, fut_newsdata, fut_zhihu,
+                return_exceptions=True,
+            )
+
+        total_elapsed = time.time() - t_start
+        labels = ["HackerNews", "Reddit", "newsdata.io", "知乎"]
+        all_news: list[dict] = []
+        source_stats: list[str] = []
+
+        for label, result in zip(labels, results):
+            if isinstance(result, BaseException):
+                log.warning(f"{label} 抓取异常: {result}")
+                source_stats.append(f"{label}: 失败")
+            else:
+                # newsdata.io 无 key 时跳过统计
+                if label == "newsdata.io" and not newsdata_api_key:
+                    continue
+                all_news.extend(result)
+                source_stats.append(f"{label}: {len(result)} 条")
+
+        source_stats.append(f"总耗时 {total_elapsed:.1f}s")
+        return all_news, source_stats
 
     # ------------------------------------------------------------------
     # Hacker News
@@ -202,9 +237,10 @@ class AINewsTool(BaseTool):
             news_list.extend(rss_items)
             rss_count += len(rss_items)
 
-        # --- 通道 B: Pullpush API（高分帖子补充）---
+        # --- 通道 B: Pullpush API（高分帖子补充）—— 只查询核心子版块，减少频率限制风险 ---
+        pullpush_subreddits = ["artificial", "MachineLearning"]
         pullpush_count = 0
-        for sub in subreddits:
+        for sub in pullpush_subreddits:
             pp_items = self._fetch_reddit_pullpush(sub, keywords, limit=5)
             news_list.extend(pp_items)
             pullpush_count += len(pp_items)

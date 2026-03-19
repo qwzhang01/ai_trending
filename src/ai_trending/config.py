@@ -13,10 +13,13 @@ class LLMConfig:
     """LLM 相关配置."""
 
     model: str = "openai/gpt-4o"
+    model_light: str = ""  # 轻量模型，留空则回退到 model
+    model_tool: str = ""   # 工具调用模型，留空则回退到 model_light
     api_key: str = ""
     api_base: str = ""
     temperature: float = 0.1  # 生产环境用低温度，减少幻觉
     max_tokens: int = 4096
+    disable_thinking: bool = False  # 对推理模型关闭 thinking 模式
 
 
 @dataclass
@@ -83,13 +86,19 @@ def load_config() -> AppConfig:
     """从环境变量加载配置并返回 AppConfig 实例."""
     load_dotenv()
 
+    default_model = os.getenv("MODEL", "openai/gpt-4o")
+    light_model = os.getenv("MODEL_LIGHT", "") or default_model
+
     config = AppConfig(
         llm=LLMConfig(
             model=os.getenv("MODEL", "openai/gpt-4o"),
+            model_light=os.getenv("MODEL_LIGHT", "") or default_model,
+            model_tool= os.getenv("MODEL_TOOL", "") or light_model,
             api_key=os.getenv("OPENAI_API_KEY", ""),
             api_base=os.getenv("OPENAI_API_BASE", ""),
             temperature=float(os.getenv("LLM_TEMPERATURE", "0.1")),
             max_tokens=int(os.getenv("LLM_MAX_TOKENS", "4096")),
+            disable_thinking=os.getenv("LLM_DISABLE_THINKING", "").lower() == "true",
         ),
         github=GitHubConfig(
             token=os.getenv("GITHUB_TOKEN", ""),

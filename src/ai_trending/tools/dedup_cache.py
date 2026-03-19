@@ -89,11 +89,8 @@ class DedupCache:
         self._seen: dict[str, str] = _expire(_load(name), keep_days)
 
     def is_new(self, key: str) -> bool:
-        """判断 key 是否是今天首次出现（即昨天及之前没见过）."""
-        today = datetime.now().strftime("%Y-%m-%d")
-        first_seen = self._seen.get(key)
-        # 从未见过，或者今天才第一次见到（同一天内多次运行不算重复）
-        return first_seen is None or first_seen == today
+        """判断 key 是否从未出现过（只要曾经见过就算重复，包括今天）."""
+        return key not in self._seen
 
     def filter_new(self, items: list, key_fn) -> list:
         """从 items 中过滤出「今天首次出现」的条目.
@@ -123,9 +120,7 @@ class DedupCache:
         """将 keys 标记为今天已见，并持久化到文件."""
         today = datetime.now().strftime("%Y-%m-%d")
         for key in keys:
-            # 只在首次见到时记录日期，后续同一天重复调用不覆盖
-            if key not in self._seen:
-                self._seen[key] = today
+            self._seen[key] = today
         _save(self.name, self._seen)
 
     def stats(self) -> dict:

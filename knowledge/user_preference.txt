@@ -1,8 +1,0 @@
-User is an AI Engineer interested in AI Agents, LLMs, and open source AI projects.
-User wants daily AI trending reports covering:
-- Top 5 hottest AI open source projects on GitHub
-- Latest AI/LLM/Agent industry news
-- Trend analysis and insights
-Reports should be published to GitHub and formatted as WeChat articles.
-Preferred language for reports: Chinese (中文)
-Report style: Professional yet engaging, with emojis and clear structure.

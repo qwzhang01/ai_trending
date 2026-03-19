@@ -31,7 +31,7 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/pyproject.toml /app/
-COPY --from=builder /app/knowledge /app/knowledge
+COPY --from=builder /app/run.py /app/
 
 # 创建输出目录并设置权限
 RUN mkdir -p /app/reports /app/output /app/logs \
@@ -44,9 +44,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 USER appuser
 
-# 健康检查：确认 Python 和依赖可用
+# 健康检查：确认 LangGraph 图可以正常构建
 HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
-    CMD python -c "from ai_trending.crew import AiTrending; print('ok')" || exit 1
+    CMD python -c "from ai_trending.graph import build_graph; print('ok')" || exit 1
 
 # 默认入口
 ENTRYPOINT ["python", "run.py"]

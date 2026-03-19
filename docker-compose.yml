@@ -2,9 +2,11 @@
 # AI Trending — Docker Compose 配置
 # ============================================
 # 用法:
-#   docker compose run --rm ai-trending           # 手动运行一次
-#   docker compose up -d ai-trending-cron         # 启动定时调度（每天早8点）
-#   docker compose logs -f ai-trending-cron       # 查看定时任务日志
+#   docker compose run --rm ai-trending                    # 手动运行一次
+#   docker compose run --rm ai-trending --dry-run          # 只校验配置
+#   docker compose run --rm ai-trending --date 2026-03-17  # 指定日期
+#   docker compose up -d ai-trending-cron                  # 启动定时调度（每天早8点）
+#   docker compose logs -f ai-trending-cron                # 查看定时任务日志
 
 services:
   # 手动运行模式
@@ -17,7 +19,7 @@ services:
       - ./logs:/app/logs
     restart: "no"
 
-  # 定时调度模式（每天早上 8:00 执行）
+  # 定时调度模式（每天早上 8:00 CST 执行）
   ai-trending-cron:
     build: .
     env_file: .env

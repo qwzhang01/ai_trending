@@ -91,6 +91,9 @@ def safe_request(
 
             # 对于 429 (Rate Limit)，特殊处理
             if resp.status_code == 429:
+                if attempt >= max_retries:
+                    log.warning(f"⚠️  {name} 触发速率限制，已达最大重试次数({max_retries})，跳过")
+                    return None
                 retry_after = int(resp.headers.get("Retry-After", 60))
                 log.warning(f"⚠️  {name} 触发速率限制，等待 {retry_after}s...")
                 time.sleep(retry_after)

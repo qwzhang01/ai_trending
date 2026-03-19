@@ -1,14 +1,74 @@
-.env
+# Python
 __pycache__/
-.DS_Store
-*.pyc
-.venv/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# 日志
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+.env
+.env.local
+.env.*.local
+
+# Logs
 logs/
+*.log
 
-# 运行指标
+# Metrics and outputs
 metrics/
+output/
+reports/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Package management
+Pipfile.lock
+poetry.lock
+
+# Temporary files
+*.tmp
+*.temp

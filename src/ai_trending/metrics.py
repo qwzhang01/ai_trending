@@ -107,33 +107,6 @@ class ToolCallRecord:
 
 
 class RunMetrics:
-    """单次运行的全量指标采集器.
-
-    用法:
-        metrics = RunMetrics()
-        metrics.start()
-
-        # 记录阶段
-        metrics.stage_start("Crew 执行")
-        result = crew.kickoff(...)
-        metrics.stage_end("Crew 执行")
-
-        # 记录 Tool 调用
-        rec = metrics.tool_start("GitHubPublishTool")
-        try:
-            ...
-            rec.finish(status="success")
-        except Exception as e:
-            rec.finish(status="failed", error=str(e))
-
-        # 从 CrewOutput 提取 Token 用量
-        metrics.collect_crew_result(result)
-
-        # 输出汇总 + 持久化
-        metrics.print_summary()
-        metrics.save()
-    """
-
     def __init__(self, run_date: str | None = None):
         self.run_date = run_date or datetime.now().strftime("%Y-%m-%d")
         self.run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -203,30 +176,6 @@ class RunMetrics:
         rec = ToolCallRecord(tool_name)
         self.tool_calls.append(rec)
         return rec
-
-    # ---------- 从 CrewOutput 提取指标 ----------
-
-    def collect_crew_result(self, result: Any):
-        """从 CrewOutput 中提取 token_usage 等指标."""
-        # CrewOutput 有 token_usage 属性
-        usage = getattr(result, "token_usage", None)
-        if usage:
-            if isinstance(usage, dict):
-                self.token_usage.update(usage)
-            else:
-                # 可能是 UsageMetrics 对象
-                for key in ["total_tokens", "prompt_tokens", "completion_tokens", "successful_requests"]:
-                    val = getattr(usage, key, 0)
-                    if val:
-                        self.token_usage[key] = int(val)
-
-        # 从环境变量获取模型名称来估算费用
-        self.model_name = os.getenv("MODEL", "unknown")
-        self.estimated_cost = _estimate_cost(
-            self.model_name,
-            self.token_usage.get("prompt_tokens", 0),
-            self.token_usage.get("completion_tokens", 0),
-        )
 
     # ---------- 汇总报告 ----------
 
