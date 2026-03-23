@@ -8,6 +8,7 @@ from typing import Type
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from ai_trending.config import load_config
 from ai_trending.logger import get_logger
 from ai_trending.retry import safe_request
 
@@ -49,8 +50,9 @@ class GitHubPublishTool(BaseTool):
         commit_message: str = "",
     ) -> str:
         """推送报告到 GitHub."""
-        token = os.environ.get("GITHUB_TOKEN", "")
-        repo = os.environ.get("GITHUB_REPORT_REPO", "")
+        cfg = load_config()
+        token = cfg.github.token
+        repo = cfg.github.report_repo
 
         if not token:
             return self._save_locally(content, filename, "未设置 GITHUB_TOKEN 环境变量，报告已保存到本地")

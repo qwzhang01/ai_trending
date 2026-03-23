@@ -6,7 +6,8 @@
 
 | 版本 | 支持状态          |
 |------|-------------------|
-| 0.1.x | ✅ 安全更新支持    |
+| 0.2.x | ✅ 安全更新支持    |
+| 0.1.x | ⚠️ 仅严重漏洞修复  |
 | < 0.1.0 | ❌ 不再支持       |
 
 ## 报告安全漏洞
@@ -39,20 +40,37 @@
 
 ### API 密钥管理
 
+本项目涉及以下敏感凭据，均须通过环境变量管理，**严禁硬编码到代码中**：
+
+| 凭据 | 环境变量 | 说明 |
+|------|---------|------|
+| LLM API Key | `OPENAI_API_KEY` | OpenAI / 兼容服务密钥 |
+| GitHub Token | `GITHUB_TOKEN` | 用于 API 搜索和报告推送 |
+| 微信 AppSecret | `WECHAT_APP_SECRET` | 微信公众号鉴权密钥 |
+| newsdata.io Key | `NEWSDATA_API_KEY` | 新闻 API 密钥 |
+| 知乎 Cookie | `ZHIHU_COOKIE` | 包含登录态，泄露风险较高 |
+
 ```bash
-# 正确做法：使用环境变量
-export OPENAI_API_KEY="your-api-key"
+# 正确做法：使用环境变量（写入 .env，不提交到 Git）
+OPENAI_API_KEY=sk-your-api-key
+GITHUB_TOKEN=ghp_your-token
 
 # 错误做法：硬编码在代码中
-api_key = "your-api-key"
+api_key = "sk-your-api-key"  # ❌ 绝对禁止
 ```
 
 ### 依赖安全
 
 我们使用以下工具确保依赖安全：
-- `uv` 进行依赖管理
+- `uv` 进行依赖管理（锁文件 `uv.lock` 固定依赖版本）
 - 定期更新依赖版本
 - 监控已知漏洞
+
+### LLM 输出安全
+
+- 日报内容由 LLM 生成，发布前请人工审核，避免幻觉内容对外传播
+- 微信草稿箱推送后需在公众号后台人工审核发布，不会自动对外发布
+- GitHub 报告推送到指定仓库，建议使用独立的报告仓库，与主代码仓库隔离
 
 ## 安全更新
 

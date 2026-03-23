@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_trending.tools.dedup_cache import (
+from ai_trending.crew.util.dedup_cache import (
     KEEP_DAYS,
     DedupCache,
     _expire,

@@ -1,8 +1,8 @@
 """LangGraph 节点实现 — 每个节点是流水线中的一个独立步骤.
 
 节点职责:
-  - collect_github_node: 调用 GitHubTrendingTool 抓取热门项目 + LLM 筛选
-  - collect_news_node:   调用 AINewsTool 抓取行业新闻 + LLM 筛选
+  - collect_github_node: 调用 GitHubTrendingTool 抓取热门项目（工具内部使用 CrewAI 规划与分析）
+  - collect_news_node:   触发 NewsCollectCrew（多源抓取 + CrewAI Agent LLM 筛选）
   - score_trends_node:   LLM 结构化评分（核心差异点）
   - write_report_node:   LLM 撰写 Markdown 日报
   - publish_node:        调用 publish tools 推送到各渠道
@@ -10,7 +10,7 @@
 设计原则:
   - 每个节点只读取需要的 state 字段，写入自己负责的字段
   - Tool 调用和 LLM 调用分离，便于独立测试
-  - 采集节点内部使用 CrewAI Agent 做 LLM 驱动的工具调用（发挥 CrewAI 的 tool-use 优势）
+  - GitHub 采集的 CrewAI 编排下沉到工具内部，节点只负责接线
   - 评分和写作节点直接调用 LiteLLM（更精确的 prompt 控制）
 """
 
@@ -49,31 +49,6 @@ GITHUB_PROMPT_TEMPLATE = """以下是通过 GitHub API 搜索到的 AI 相关热
 - 按综合价值（技术新颖性 × 社区热度）从高到低排列
 
 不要输出任何解释性文字，只输出5个项目的格式化内容。
-
-当前日期: {current_date}"""
-
-NEWS_SYSTEM_PROMPT = """你是一位 AI 行业分析师，擅长从信息噪音中提炼真正有价值的信号。
-你的原则：一条新闻如果不能回答「这对行业意味着什么」，就不值得收录。
-你的文风：克制、精准、有判断力。不用感叹号，不用「重磅」「颠覆」等词，用事实说话。"""
-
-NEWS_PROMPT_TEMPLATE = """以下是通过多个新闻源搜集到的 AI 行业新闻原始数据:
-
-{raw_data}
-
-请筛选出最有价值的 8 条新闻，严格按以下格式输出:
-
-**[类别标签]** [新闻标题]
-> [一句话判断：这件事的实质是什么，对行业有什么影响，不超过35字]
-来源: [来源名] | [链接]
-
-类别标签只能是以下之一: `大厂动态` `技术突破` `开源生态` `投融资` `行业观察`
-
-筛选标准:
-- 优先选有实质内容的新闻（发布了什么、做了什么），排除纯预测和观点文章
-- 同一公司/事件只保留最重要的一条
-- 按新闻重要性从高到低排列
-
-不要输出任何解释性文字，只输出8条新闻的格式化内容。
 
 当前日期: {current_date}"""
 
@@ -216,7 +191,7 @@ REPORT_PROMPT_TEMPLATE = """基于以下数据，撰写一份每日 AI 趋势简
 def collect_github_node(state: dict[str, Any]) -> dict[str, Any]:
     """节点 1: GitHub 热门项目数据采集.
 
-    使用 GitHubTrendingTool 抓取原始数据，再用 LLM(light) 筛选出 Top 5。
+    直接调用 GitHubTrendingTool，由工具内部使用 CrewAI 完成关键词规划、趋势分析和重排行。
     """
     current_date = state.get("current_date", "")
     log.info(f"[collect_github] 开始采集 GitHub 热门 AI 项目 ({current_date})")
@@ -225,33 +200,14 @@ def collect_github_node(state: dict[str, Any]) -> dict[str, Any]:
         from ai_trending.tools.github_trending_tool import GitHubTrendingTool
 
         tool = GitHubTrendingTool()
+        github_summary = tool._run(query="AI", top_n=5)
 
-        # 分别搜索多个关键词，覆盖当前 AI 行业核心趋势方向
-        raw_results: list[str] = []
-        for keyword in ["AI Agent", "LLM inference", "MCP"]:
-            try:
-                result = tool._run(query=keyword)
-                if result and not result.startswith("❌"):
-                    raw_results.append(f"--- 关键词: {keyword} ---\n{result}")
-            except Exception as e:
-                log.warning(f"[collect_github] 搜索 '{keyword}' 失败: {e}")
-
-        if not raw_results:
-            log.error("[collect_github] 所有搜索均失败")
+        if not github_summary or github_summary.startswith("未能"):
+            log.error("[collect_github] GitHubTrendingTool 未返回有效数据")
             return {
                 "github_data": "GitHub 数据采集失败，无可用数据。",
-                "errors": ["GitHub 数据采集: 所有搜索关键词均失败"],
+                "errors": ["GitHub 数据采集: GitHubTrendingTool 未返回有效数据"],
             }
-
-        raw_data = "\n\n".join(raw_results)
-
-        # 使用 light 模型筛选
-        github_summary = call_llm(
-            prompt=GITHUB_PROMPT_TEMPLATE.format(raw_data=raw_data, current_date=current_date),
-            system_prompt=GITHUB_SYSTEM_PROMPT,
-            tier="light",
-            max_tokens=2048,
-        )
 
         log.info(f"[collect_github] 完成, 输出 {len(github_summary)} 字符")
         return {"github_data": github_summary}
@@ -267,7 +223,8 @@ def collect_github_node(state: dict[str, Any]) -> dict[str, Any]:
 def collect_news_node(state: dict[str, Any]) -> dict[str, Any]:
     """节点 2: AI 行业新闻数据采集.
 
-    使用 AINewsTool 抓取原始数据，再用 LLM(light) 筛选出 8-10 条。
+    触发 AINewsTool（内部由 NewsCollectCrew 完成多源抓取 + LLM 筛选），
+    直接返回已筛选好的新闻摘要，无需在节点层再做 LLM 处理。
     """
     current_date = state.get("current_date", "")
     log.info(f"[collect_news] 开始采集 AI 行业新闻 ({current_date})")
@@ -275,32 +232,15 @@ def collect_news_node(state: dict[str, Any]) -> dict[str, Any]:
     try:
         from ai_trending.tools.ai_news_tool import AINewsTool
 
-        # 搜索多个关键词
-        raw_results: list[str] = []
-        for keyword in ["AI", "LLM", "AI Agent", "大模型"]:
-            try:
-                result = AINewsTool()._run(keywords=keyword)
-                if result and not result.startswith("❌"):
-                    raw_results.append(f"--- 关键词: {keyword} ---\n{result}")
-            except Exception as e:
-                log.warning(f"[collect_news] 搜索 '{keyword}' 失败: {e}")
+        # 一次调用，内部并发抓取 HN / Reddit / newsdata.io / 知乎，并由 CrewAI Agent 筛选
+        news_summary = AINewsTool()._run(keywords="AI,LLM,AI Agent,大模型", top_n=30)
 
-        if not raw_results:
-            log.error("[collect_news] 所有新闻源均失败")
+        if not news_summary or news_summary.startswith("❌"):
+            log.error(f"[collect_news] AINewsTool 返回失败: {news_summary}")
             return {
                 "news_data": "新闻数据采集失败，无可用数据。",
-                "errors": ["新闻数据采集: 所有搜索关键词均失败"],
+                "errors": [f"新闻数据采集: {news_summary}"],
             }
-
-        raw_data = "\n\n".join(raw_results)
-
-        # 使用 light 模型筛选
-        news_summary = call_llm(
-            prompt=NEWS_PROMPT_TEMPLATE.format(raw_data=raw_data, current_date=current_date),
-            system_prompt=NEWS_SYSTEM_PROMPT,
-            tier="light",
-            max_tokens=2048,
-        )
 
         log.info(f"[collect_news] 完成, 输出 {len(news_summary)} 字符")
         return {"news_data": news_summary}
@@ -444,8 +384,8 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
     # --- Step 2: 微信公众号 HTML ---
     wechat_html = ""
     try:
-        from ai_trending.tools.wechat_article_tool import WeChatArticleTool
-        wechat_tool = WeChatArticleTool()
+        from ai_trending.tools.wechat_publish_tool import WeChatPublishTool
+        wechat_tool = WeChatPublishTool()
         wechat_result = wechat_tool._run(
             content=report_content,
             title=article_title,

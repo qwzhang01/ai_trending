@@ -2,18 +2,20 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![LangGraph](https://img.shields.io/badge/LangGraph-1.1%2B-green?logo=langchain)
+![CrewAI](https://img.shields.io/badge/CrewAI-1.11-orange?logo=crewai)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
-![Version](https://img.shields.io/badge/Version-0.1.0-orange)
+![Version](https://img.shields.io/badge/Version-0.2.0-orange)
 
-每日 AI 开源项目与新闻聚合报告系统，基于 **LangGraph** 状态机编排多步骤 AI 流水线，自动抓取 GitHub 热门项目和行业新闻，经 LLM 评分筛选后生成 Markdown 日报，并推送至 GitHub 仓库和微信公众号。
+每日 AI 开源项目与新闻聚合报告系统，基于 **LangGraph** 状态机编排多步骤 AI 流水线，结合 **CrewAI** Agent 完成智能分析，自动抓取 GitHub 热门项目和行业新闻，经 LLM 评分筛选后生成 Markdown 日报，并推送至 GitHub 仓库和微信公众号。
 
 ---
 
 ## 功能特性
 
 - **并行数据采集** — GitHub 热门项目 + AI 行业新闻同步抓取，互不阻塞
+- **CrewAI Agent 分析** — 关键词规划、趋势排名、新闻筛选均由专属 Agent 完成
 - **LLM 结构化评分** — 从热度、技术前沿性、成长潜力三个维度量化评分，驱动报告详略
-- **分级模型策略** — 采集/整理用轻量模型，写作/评分用高质量模型，降低成本
+- **三档模型策略** — `light`（采集整理）/ `default`（分析写作）/ `tool_only`（工具调用），降低成本
 - **多渠道发布** — 自动推送到 GitHub 仓库 + 生成微信公众号 HTML + 推送草稿箱
 - **可观测性** — 运行指标持久化（JSON）、Token 用量统计、Webhook 失败通知
 - **去重缓存** — 本地缓存已处理的 URL / 仓库，避免重复收录
@@ -22,7 +24,7 @@
 
 ## 架构
 
-基于 [LangGraph](https://github.com/langchain-ai/langgraph) `StateGraph` 实现显式状态流转：
+基于 [LangGraph](https://github.com/langchain-ai/langgraph) `StateGraph` 实现显式状态流转，[CrewAI](https://github.com/crewAIInc/crewAI) 负责 Agent 内部多步推理：
 
 ```
 START
@@ -31,13 +33,38 @@ START
        (并行)
 ```
 
-| 节点 | 职责 | 使用模型 |
-|------|------|---------|
-| `collect_github` | 调用 GitHub API 抓取热门 AI 项目，LLM 筛选 Top 5 | `MODEL_LIGHT` |
-| `collect_news` | 多源抓取 AI 行业新闻（HN / Reddit / newsdata.io 等），LLM 筛选 8-10 条 | `MODEL_LIGHT` |
-| `score_trends` | LLM 对项目和新闻进行结构化 JSON 评分 | `MODEL` |
-| `write_report` | 基于原始数据 + 评分结果生成 Markdown 日报，保存到 `reports/` | `MODEL` |
-| `publish` | 推送 GitHub 仓库 + 生成微信 HTML + 推送微信草稿箱 | — |
+### 技术分层
+
+```
+┌─────────────────────────────────────────────────────┐
+│  入口层  main.py / run.py                            │
+├─────────────────────────────────────────────────────┤
+│  编排层  LangGraph (graph.py + nodes.py)             │
+│          全局状态流转、并行采集、条件分支              │
+├──────────────────────┬──────────────────────────────┤
+│  Agent 层            │  Agent 层                    │
+│  CrewAI              │  CrewAI                      │
+│  github_trending/    │  new_collect/                │
+│  (关键词→搜索→排名)   │  (多源抓取→LLM筛选)          │
+├──────────────────────┴──────────────────────────────┤
+│  工具层  tools/                                      │
+│  github_trending_tool / ai_news_tool                │
+│  wechat_publish_tool / github_publish_tool          │
+├─────────────────────────────────────────────────────┤
+│  基础设施  llm_client.py / logger.py / retry.py     │
+│           config.py / metrics.py                    │
+└─────────────────────────────────────────────────────┘
+```
+
+### 节点说明
+
+| 节点 | 职责 | 内部实现 | 使用模型 |
+|------|------|---------|---------| 
+| `collect_github` | 调用 GitHubTrendingTool 抓取热门 AI 项目 | CrewAI（关键词规划 → 搜索 → 趋势排名） | `light` |
+| `collect_news` | 触发 AINewsTool 多源抓取 AI 行业新闻 | CrewAI（多源抓取 + Agent LLM 筛选） | `light` |
+| `score_trends` | LLM 对项目和新闻进行结构化 JSON 评分 | LiteLLM 直接调用（精确 prompt 控制） | `default` |
+| `write_report` | 基于原始数据 + 评分结果生成 Markdown 日报 | LiteLLM 直接调用（精确 prompt 控制） | `default` |
+| `publish` | 推送 GitHub 仓库 + 生成微信 HTML + 推送草稿箱 | 各渠道 Tool 独立调用 | — |
 
 ---
 
@@ -65,16 +92,16 @@ cp .env.example .env
 
 ```bash
 # 直接运行（推荐）
-python run.py
+.venv/bin/python run.py
 
 # 指定日期
-python run.py --date 2026-03-19
+.venv/bin/python run.py --date 2026-03-19
 
 # 只校验配置，不执行
-python run.py --dry-run
+.venv/bin/python run.py --dry-run
 
 # 详细日志
-python run.py --verbose
+.venv/bin/python run.py --verbose
 
 # 通过 uv 脚本入口
 uv run ai_trending
@@ -90,11 +117,13 @@ uv run ai_trending
 
 | 变量 | 说明 | 示例 |
 |------|------|------|
-| `MODEL` | 主模型（写作/评分） | `openai/gpt-4o` |
+| `MODEL` | 主模型（写作/评分，default 档） | `openai/gpt-4o` |
 | `OPENAI_API_KEY` | OpenAI / 兼容 API Key | `sk-xxx` |
 | `OPENAI_API_BASE` | 自定义 API Base（Ollama / 代理等） | `http://localhost:11434` |
-| `MODEL_LIGHT` | 轻量模型（采集/整理），留空回退到 `MODEL` | `openai/gpt-4o-mini` |
+| `MODEL_LIGHT` | 轻量模型（采集/整理，light 档），留空回退到 `MODEL` | `openai/gpt-4o-mini` |
+| `MODEL_TOOL` | 工具调用模型（tool_only 档），留空回退到 `MODEL_LIGHT` | `openai/gpt-4o-mini` |
 | `LLM_TEMPERATURE` | 温度，生产环境推荐 `0.1` | `0.1` |
+| `LLM_DISABLE_THINKING` | 对推理模型（Kimi-K2.5、DeepSeek-R1）关闭 thinking 模式 | `true` |
 
 支持所有 [LiteLLM](https://docs.litellm.ai/docs/providers) 兼容的模型，包括 OpenAI、Anthropic、Ollama、DeepSeek 等。
 
@@ -112,6 +141,7 @@ uv run ai_trending
 | 变量 | 说明 |
 |------|------|
 | `NEWSDATA_API_KEY` | [newsdata.io](https://newsdata.io/register) API Key，提供更多新闻源 |
+| `ZHIHU_COOKIE` | 知乎 Cookie，用于获取知乎热榜 AI 相关内容 |
 
 未配置时仅使用 Hacker News + Reddit 作为新闻源。
 
@@ -178,29 +208,62 @@ docker compose down
 ```
 ai_trending/
 ├── src/ai_trending/
-│   ├── graph.py          # LangGraph 流程图定义（StateGraph）
-│   ├── nodes.py          # 各节点实现（采集 / 评分 / 写作 / 发布）
-│   ├── main.py           # 模块入口（uv run ai_trending）
-│   ├── config.py         # 环境变量加载与校验
-│   ├── llm_client.py     # LiteLLM 封装（分级模型 / JSON 模式）
-│   ├── metrics.py        # 运行指标采集与持久化
-│   ├── retry.py          # 重试装饰器
-│   ├── logger.py         # 日志配置
-│   └── tools/
+│   ├── graph.py              # LangGraph 流程图定义（StateGraph）
+│   ├── nodes.py              # 各节点实现（采集 / 评分 / 写作 / 发布）
+│   ├── main.py               # 模块入口（uv run ai_trending）
+│   ├── config.py             # 环境变量加载与校验
+│   ├── llm_client.py         # LiteLLM 封装（三档模型 / JSON 模式 / Token 统计）
+│   ├── metrics.py            # 运行指标采集与持久化
+│   ├── retry.py              # HTTP 重试工具（safe_request）
+│   ├── logger.py             # 日志配置
+│   ├── crew/
+│   │   ├── github_trending/  # GitHub 趋势分析 CrewAI 模块
+│   │   │   ├── crew.py       # 编排器（GitHubTrendingOrchestrator）
+│   │   │   ├── models.py     # Pydantic 数据模型
+│   │   │   ├── utils.py      # 过滤规则和工具函数
+│   │   │   ├── keyword_planning/   # 子 Crew：关键词规划
+│   │   │   └── trend_ranking/      # 子 Crew：趋势排名
+│   │   ├── new_collect/      # 新闻采集 CrewAI 模块
+│   │   │   ├── crew.py       # NewsCollectCrew
+│   │   │   └── fetchers.py   # 多源新闻抓取器（HN / Reddit / newsdata.io / 知乎）
+│   │   └── util/             # 共享工具
+│   │       └── dedup_cache.py  # 本地去重缓存
+│   └── tools/                # 工具层（供节点和 Crew 调用）
 │       ├── github_trending_tool.py   # GitHub API 搜索工具
 │       ├── ai_news_tool.py           # 多源新闻抓取工具
 │       ├── github_publish_tool.py    # GitHub 报告推送工具
-│       ├── wechat_article_tool.py    # 微信 HTML 生成工具
-│       ├── wechat_draft_tool.py      # 微信草稿箱推送工具
-│       └── dedup_cache.py            # 本地去重缓存
-├── run.py                # 生产启动入口（支持 CLI 参数）
-├── reports/              # 生成的 Markdown 日报
-├── output/               # 微信 HTML + 去重缓存
-├── metrics/              # 运行指标 JSON
+│       └── wechat_publish_tool.py    # 微信公众号 HTML 生成 + 草稿箱推送
+├── run.py                    # 生产启动入口（支持 CLI 参数）
+├── tests/                    # 单元测试
+├── reports/                  # 生成的 Markdown 日报
+├── output/                   # 微信 HTML + 去重缓存
+├── metrics/                  # 运行指标 JSON
 ├── Dockerfile
 ├── docker-compose.yml
 ├── pyproject.toml
 └── .env.example
+```
+
+---
+
+## 三档模型策略
+
+项目将 LLM 分为三个档位，不同场景使用不同档位以控制成本：
+
+| 档位 | 环境变量 | 默认模型 | 适用场景 |
+|------|---------|---------|---------| 
+| `light` | `MODEL_LIGHT` | `gpt-4o-mini` | 数据采集、关键词规划、新闻筛选 |
+| `default` | `MODEL` | `gpt-4o` | 趋势评分、日报撰写、深度分析 |
+| `tool_only` | `MODEL_TOOL` | 回退到 `MODEL_LIGHT` | 纯工具调用型 Agent |
+
+切换到第三方兼容服务（如 DeepSeek）只需修改 `.env`，无需改代码：
+
+```bash
+# 切换到 DeepSeek
+OPENAI_API_BASE=https://api.deepseek.com/v1
+OPENAI_API_KEY=sk-deepseek-...
+MODEL=deepseek-chat
+MODEL_LIGHT=deepseek-chat
 ```
 
 ---
@@ -210,26 +273,29 @@ ai_trending/
 日报保存在 `reports/YYYY-MM-DD.md`，格式如下：
 
 ```markdown
-# AI 日报 | 2026-03-19
+# AI 日报 · 2026-03-19
 
-今天最值得关注的是 xxx 发布了 ...
+> 今日最值得关注：xxx 发布了 ...
 
-## GitHub 热门项目 Top 5
+---
 
-### owner/repo-name
-> ⭐ 12.3k · Python · 一句话定位
+## 🔬 GitHub 热门项目
 
-推荐理由 ...
+### owner/repo-name · ⭐ 12.3k · Python
+**一句话定位，不超过20字**
+推荐理由，说清楚技术亮点或应用价值
+→ https://github.com/owner/repo-name
 
-[owner/repo-name](https://github.com/owner/repo-name)
+## 📰 行业动态
 
-## 行业动态
+| 类别 | 事件 | 影响 |
+|------|------|------|
+| 技术突破 | **新闻标题** · 来源 | 一句话影响 |
 
-- **新闻标题** — 一句话判断。[来源](链接)
+## 📊 趋势观察
 
-## 趋势观察
-
-1. ...
+**趋势1标题**
+1-2句分析，有数据或对比
 ```
 
 ---

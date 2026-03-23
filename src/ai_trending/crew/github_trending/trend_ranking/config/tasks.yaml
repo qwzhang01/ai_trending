@@ -1,0 +1,27 @@
+rank_repos:
+  description: >
+    用户主题: {query}
+    当前日期: {current_date}
+    输出数量要求: 最终高质量项目控制在 3-{requested_count} 个。
+
+    请你评估下面这些 GitHub 仓库是否能代表最近 AI 发展趋势，并按重要性排序。
+    评分要求：
+    - trend_score: 这个仓库对最近 AI 方向的代表性，0-10 分。
+    - innovation_score: 技术前沿性，0-10 分。
+    - execution_score: 工程完成度与落地信号，0-10 分。
+    - ecosystem_score: 社区热度与生态外溢性，0-10 分。
+    - representative: 只有真正能代表最近趋势的项目才设为 true。
+    - reason: 用一句中文简要说明原因。
+
+    筛选原则：
+    1. 优先近期活跃、方向明确、具备工程信号的新项目。
+    2. 排除 UI 套壳、纯资源集合、教程、简单二次封装。
+    3. 不能编造仓库，只能从输入候选列表中选择，full_name 必须完全一致。
+    4. ranked_repos 按重要性从高到低排序，数量不超过 8 个。
+
+    候选仓库 JSON：
+    {candidates_json}
+  expected_output: >
+    返回一个符合 GitHubTrendRanking 模型的结构化结果，
+    包含 summary、hot_signals 和 ranked_repos。
+  agent: trend_analyst
