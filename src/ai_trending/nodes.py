@@ -16,11 +16,10 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
+from ai_trending.llm_client import call_llm_with_usage
 from ai_trending.logger import get_logger
-from ai_trending.llm_client import call_llm, call_llm_with_usage
 
 log = get_logger("nodes")
 
@@ -381,8 +380,7 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
         log.error(f"[publish] GitHub 发布失败: {e}")
         publish_results.append(f"GitHub: 失败 - {e}")
 
-    # --- Step 2: 微信公众号 HTML ---
-    wechat_html = ""
+    # --- Step 2: 微信公众号 HTML + 草稿箱 ---
     try:
         from ai_trending.tools.wechat_publish_tool import WeChatPublishTool
         wechat_tool = WeChatPublishTool()
@@ -391,37 +389,11 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
             title=article_title,
             author=author_name,
         )
-        wechat_html = wechat_tool._markdown_to_wechat_html(report_content)
         first_line = wechat_result.splitlines()[0] if wechat_result else ""
         log.info(f"[publish] 微信HTML: {first_line}")
         publish_results.append(f"微信HTML: {first_line}")
     except Exception as e:
         log.error(f"[publish] 微信 HTML 生成失败: {e}")
         publish_results.append(f"微信HTML: 失败 - {e}")
-
-    # --- Step 3: 微信草稿箱 ---
-    app_id = os.getenv("WECHAT_APP_ID", "")
-    app_secret = os.getenv("WECHAT_APP_SECRET", "")
-    if not app_id or not app_secret:
-        log.info("[publish] 微信草稿箱: 未配置，跳过")
-        publish_results.append("微信草稿箱: 未配置，已跳过")
-    else:
-        try:
-            from ai_trending.tools.wechat_draft_tool import WeChatDraftTool
-            draft_result = WeChatDraftTool()._run(
-                content=wechat_html or report_content,
-                title=article_title,
-                author=author_name,
-            )
-            if draft_result.startswith("❌") or draft_result.startswith("⚠️"):
-                log.warning(f"[publish] 微信草稿箱: {draft_result.splitlines()[0]}")
-                publish_results.append(f"微信草稿箱: {draft_result.splitlines()[0]}")
-            else:
-                first_line = draft_result.splitlines()[0] if draft_result else ""
-                log.info(f"[publish] 微信草稿箱: {first_line}")
-                publish_results.append(f"微信草稿箱: {first_line}")
-        except Exception as e:
-            log.error(f"[publish] 微信草稿箱异常: {e}")
-            publish_results.append(f"微信草稿箱: 异常 - {e}")
 
     return {"publish_results": publish_results}

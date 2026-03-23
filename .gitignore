@@ -54,10 +54,6 @@ Thumbs.db
 logs/
 *.log
 
-# Metrics and outputs
-metrics/
-output/
-reports/
 
 # Testing
 .pytest_cache/
@@ -72,3 +68,4 @@ poetry.lock
 # Temporary files
 *.tmp
 *.temp
+

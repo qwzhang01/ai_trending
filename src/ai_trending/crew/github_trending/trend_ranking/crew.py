@@ -38,7 +38,8 @@ class TrendRankingCrew:
         """仓库趋势排名 Task，输出 GitHubTrendRanking。"""
         return Task(
             config=self.tasks_config["rank_repos"],  # type: ignore[index]
-            output_pydantic=GitHubTrendRanking,
+            # 不使用 output_pydantic，避免 instructor 与部分 LLM 的兼容性问题
+            # 由 GitHubTrendingOrchestrator._extract_pydantic_output 手动解析 JSON
         )
 
     @crew

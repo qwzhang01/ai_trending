@@ -15,7 +15,7 @@ from typing import Any, Type
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from ai_trending.crew.github_trending import create_langgraph_tool
+from ai_trending.crew.github_trending import GitHubTrendingOrchestrator
 from ai_trending.logger import get_logger
 
 log = get_logger("github_tool")
@@ -45,8 +45,8 @@ class GitHubTrendingTool(BaseTool):
     args_schema: Type[BaseModel] = GitHubTrendingInput
 
     def _run(self, query: str = "AI", top_n: int = 5) -> str:
-        crew = create_langgraph_tool()
-        final_repos, summary, hot_signals, keywords = crew.run(query=query, top_n=top_n)
+        orchestrator = GitHubTrendingOrchestrator()
+        final_repos, summary, hot_signals, keywords = orchestrator.run(query=query, top_n=top_n)
 
         if not final_repos:
             return (

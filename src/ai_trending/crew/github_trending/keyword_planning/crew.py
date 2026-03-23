@@ -38,7 +38,8 @@ class KeywordPlanningCrew:
         """关键词规划 Task，输出 GitHubSearchPlan。"""
         return Task(
             config=self.tasks_config["plan_keywords"],  # type: ignore[index]
-            output_pydantic=GitHubSearchPlan,
+            # 不使用 output_pydantic，避免 instructor 与部分 LLM 的兼容性问题
+            # 由 GitHubTrendingOrchestrator._extract_pydantic_output 手动解析 JSON
         )
 
     @crew
