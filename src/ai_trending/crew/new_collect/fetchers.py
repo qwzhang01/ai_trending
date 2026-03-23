@@ -395,7 +395,8 @@ class NewsFetcher:
             if items:
                 return items
 
-        items = self._fetch_zhihu_ssr(all_keywords, limit)
+        # SSR 方式也传入 Cookie，避免知乎要求登录时返回 403
+        items = self._fetch_zhihu_ssr(all_keywords, limit, cookie=zhihu_cookie)
         if items:
             return items
 
@@ -471,7 +472,7 @@ class NewsFetcher:
         news_list.sort(key=lambda x: x.get("score", 0), reverse=True)
         return news_list[:limit]
 
-    def _fetch_zhihu_ssr(self, keywords: list[str], limit: int) -> list[dict]:
+    def _fetch_zhihu_ssr(self, keywords: list[str], limit: int, cookie: str = "") -> list[dict]:
         """从知乎热榜 HTML 页面提取 SSR 渲染的 initialData JSON."""
         news_list: list[dict] = []
         headers = {
@@ -479,6 +480,9 @@ class NewsFetcher:
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         }
+        # 携带 Cookie 可绕过知乎的登录墙（403）
+        if cookie:
+            headers["Cookie"] = cookie
 
         resp = safe_request(
             "GET",

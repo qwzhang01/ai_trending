@@ -73,7 +73,17 @@ def call_llm_with_usage(
 
     log.info(f"LLM 调用: tier={tier}, model={model}")
 
-    response = litellm.completion(**kwargs)
+    try:
+        response = litellm.completion(**kwargs)
+    except litellm.BadRequestError as e:
+        # 部分模型（如火山引擎 doubao 系列）不支持 response_format=json_object
+        # 自动降级：去掉 response_format 参数重试，依赖 prompt 中的 JSON 约束
+        if json_mode and "response_format" in str(e):
+            log.warning(f"模型不支持 json_object 格式，降级重试（依赖 prompt 约束）: {e}")
+            kwargs.pop("response_format", None)
+            response = litellm.completion(**kwargs)
+        else:
+            raise
     content = response.choices[0].message.content or ""
 
     usage_info = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}

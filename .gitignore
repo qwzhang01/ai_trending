@@ -69,3 +69,4 @@ poetry.lock
 *.tmp
 *.temp
 
+metrics/*.json

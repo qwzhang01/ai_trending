@@ -474,6 +474,21 @@ class WeChatPublishTool(BaseTool):
         使用 markdown 库解析为标准 HTML，再用 BeautifulSoup 遍历节点注入内联样式。
         支持：标题、段落、列表、代码块、引用块、表格、分隔线、加粗/斜体/行内代码。
         """
+        # Step 0: 预处理 Markdown
+        # 问题1：Markdown 中 "任意文字\n---" 会被解析为 h2（Setext 语法）
+        # 解决：确保所有 --- 分隔线前面有空行
+        md_text = re.sub(r"([^\n])\n(---+)\s*$", r"\1\n\n\2", md_text, flags=re.MULTILINE)
+
+        # 问题2：**粗体标题** 行紧跟列表项时，nl2br 扩展会把换行转成 <br/>，
+        # 导致列表被当成 <p> 段落内的纯文本，无法渲染为 <ul><li>
+        # 解决：在 **粗体** 行和紧跟的 "- " 列表行之间插入空行
+        md_text = re.sub(r"(\*\*[^\n]+\*\*)\n(- )", r"\1\n\n\2", md_text)
+
+        # 问题3：列表项之间有空行时，Markdown 会将其拆分为多个独立 <ul>，导致渲染错位
+        # 解决：去掉连续列表项（- 开头）之间的空行，使其合并为同一个 <ul>
+        # 匹配：一个 "- " 开头的行，后面跟空行，再跟另一个 "- " 开头的行
+        md_text = re.sub(r"(^- .+)\n\n(- )", r"\1\n\2", md_text, flags=re.MULTILINE)
+
         # Step 1: Markdown → 原始 HTML（启用 tables / fenced_code / nl2br 扩展）
         raw_html = markdown.markdown(
             md_text,
@@ -488,7 +503,7 @@ class WeChatPublishTool(BaseTool):
                 existing = tag.get("style", "")
                 tag["style"] = (existing + " " + style).strip() if existing else style
 
-        # Step 3: h3 包裹卡片容器（保持原有的卡片视觉效果）
+        # Step 3: h3 包裹卡片容器（将 h3 及其后续内容一并包入卡片）
         for h3 in soup.find_all("h3"):
             card_div = soup.new_tag(
                 "div",
@@ -497,9 +512,20 @@ class WeChatPublishTool(BaseTool):
                     "border-radius: 8px; padding: 16px; margin: 12px 0 4px 0;"
                 ),
             )
-            # 将 h3 及其后续兄弟节点（直到下一个 h2/h3/hr）移入卡片
+            # 收集 h3 及其后续兄弟节点（直到下一个 h2/h3/hr/---）
+            nodes_to_move = [h3]
+            sibling = h3.next_sibling
+            while sibling is not None:
+                # 遇到下一个块级分隔节点就停止
+                if hasattr(sibling, "name") and sibling.name in ("h2", "h3", "hr"):
+                    break
+                nodes_to_move.append(sibling)
+                sibling = sibling.next_sibling
+
+            # 在 h3 前插入卡片容器，再将所有节点移入
             h3.insert_before(card_div)
-            card_div.append(h3.extract())
+            for node in nodes_to_move:
+                card_div.append(node.extract())
 
         # Step 4: 移除 h1（报告主标题已在 HTML 模板头部渲染）
         for h1 in soup.find_all("h1"):
