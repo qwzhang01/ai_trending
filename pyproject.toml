@@ -77,13 +77,13 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = [
-    "--verbose",
-    "--cov=src/ai_trending",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-]
+# addopts = [
+#     "--verbose",
+#     "--cov=src/ai_trending",
+#     "--cov-report=term-missing",
+#     "--cov-report=html",
+#     "--cov-report=xml",
+# ]
 
 [tool.coverage.run]
 source = ["src/ai_trending"]

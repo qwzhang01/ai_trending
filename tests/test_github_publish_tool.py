@@ -67,8 +67,8 @@ class TestSaveLocally:
         assert len(md_files) == 1
 
     def test_returns_warning_message(self, tool, tmp_output_dir):
-        result = tool._save_locally(SAMPLE_CONTENT, "test.md", "未设置 GITHUB_TOKEN")
-        assert "未设置 GITHUB_TOKEN" in result
+        result = tool._save_locally(SAMPLE_CONTENT, "test.md", "未设置 GITHUB_TRENDING_TOKEN")
+        assert "未设置 GITHUB_TRENDING_TOKEN" in result
         assert "test.md" in result
 
 
@@ -76,7 +76,7 @@ class TestSaveLocally:
 
 class TestGitHubPublishToolRunFallback:
     def test_no_token_saves_locally(self, tool, tmp_output_dir, monkeypatch):
-        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_TRENDING_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_REPORT_REPO", raising=False)
         result = tool._run(content=SAMPLE_CONTENT)
         assert "GITHUB_TOKEN" in result

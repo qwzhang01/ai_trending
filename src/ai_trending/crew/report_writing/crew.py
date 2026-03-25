@@ -23,42 +23,175 @@ from .models import ReportOutput
 
 log = get_logger("report_writing_crew")
 
-# 日报必须包含的 Section 标题
+# 日报必须包含的 Section 标题（按新结构更新）
 _REQUIRED_SECTIONS = [
-    "## 🔥 GitHub 热点项目",
+    "## 🎯 今日头条",
+    "## 🔥 GitHub 热点项目", 
     "## 📰 AI 热点新闻",
     "## 🧭 趋势洞察",
+    "## 💡 本周行动建议",
+]
+
+# 新闻可信度标签（必须使用）
+_NEWS_CREDIBILITY_LABELS = [
+    "🟢 一手信源",
+    "🟡 社区讨论", 
+    "🔴 待验证",
+]
+
+# 今日信号强度标签（必须使用）
+_SIGNAL_STRENGTH_LABELS = [
+    "🔴 重大变化日",
+    "🟡 常规更新日",
+    "🟢 平静日",
 ]
 
 # 禁用词列表
 _BANNED_WORDS = [
     "重磅", "震撼", "颠覆", "革命性", "划时代",
-    "里程碑", "历史性", "强烈推荐", "必看", "不容错过",
+    "里程碑", "历史性", "强烈推荐", "必看", "不容错过", 
     "太强了", "绝了", "牛逼", "未来已来", "新时代",
     "！", "!",
 ]
 
+# 叙事风格关键词（必须包含）
+_NARRATIVE_KEYWORDS = [
+    "相当于", "的", "版", "一个月前", "现在", "实测", 
+    "值得关注如果你", "值得注意的是", "真正的信号在于",
+    "信息差", "悬念", "技术细节", "谁应该关注",
+]
+
+# So What 分析关键词（必须包含）
+_SO_WHAT_KEYWORDS = [
+    "所以呢", "实质是什么", "对谁有影响", "时间窗口",
+    "值得注意的是", "真正的信号在于", "这意味着",
+]
+
 
 def _validate_report(content: str) -> list[str]:
-    """校验日报内容是否符合规范，返回问题列表（空列表表示通过）。"""
+    """校验日报内容是否符合新规范，返回问题列表（空列表表示通过）。"""
     issues: list[str] = []
 
-    # 结构检查
+    # 1. 结构检查（新结构）
     for section in _REQUIRED_SECTIONS:
         if section not in content:
             issues.append(f"缺少必要 Section：{section}")
 
-    # 字数检查（去除空格和换行后计算）
-    char_count = len(content.replace(" ", "").replace("\n", ""))
-    if char_count < 700:
-        issues.append(f"内容过短：{char_count} 字（最少 700 字）")
-    if char_count > 1500:
-        issues.append(f"内容过长：{char_count} 字（最多 1500 字）")
+    # 2. 今日信号强度检查
+    signal_found = False
+    for signal in _SIGNAL_STRENGTH_LABELS:
+        if signal in content:
+            signal_found = True
+            break
+    if not signal_found:
+        issues.append("缺少今日信号强度标签（三选一：🔴 重大变化日 / 🟡 常规更新日 / 🟢 平静日）")
 
-    # 禁用词检查
+    # 3. 新闻可信度标签检查
+    credibility_found = False
+    for label in _NEWS_CREDIBILITY_LABELS:
+        if label in content:
+            credibility_found = True
+            break
+    if not credibility_found:
+        issues.append("新闻条目缺少可信度标签（必须使用：🟢 一手信源 / 🟡 社区讨论 / 🔴 待验证）")
+
+    # 4. 今日一句话检查（必须包含「今日一句话」标记）
+    if "**[今日一句话]**" not in content:
+        issues.append("缺少「今日一句话」开篇钩子")
+
+    # 5. 场景化描述检查（GitHub 项目必须包含场景化描述）
+    if "相当于" not in content and "的" not in content and "版" not in content:
+        issues.append("GitHub 项目缺少场景化描述（必须用「相当于……的……版」句式）")
+
+    # 6. So What 分析检查（新闻必须包含 So What 分析）
+    so_what_found = False
+    for keyword in _SO_WHAT_KEYWORDS:
+        if keyword in content:
+            so_what_found = True
+            break
+    if not so_what_found:
+        issues.append("新闻条目缺少 So What 分析（必须回答：实质是什么、对谁有影响、时间窗口多长）")
+
+    # 7. 本周行动建议检查
+    if "**[本周作业]**" not in content and "**[讨论问题]**" not in content:
+        issues.append("缺少本周行动建议（必须包含至少一项可落地的任务或讨论问题）")
+
+    # 8. 星数上下文检查（必须包含本周增长信息）
+    if "（+" not in content and "本周增长" not in content:
+        issues.append("GitHub 项目星数缺少本周增长信息（格式：⭐ [star数]（+[本周增长]））")
+
+    # 9. 头条机制检查（必须有头条深度解读）
+    if "## 今日头条" in content:
+        # 检查头条是否包含深度解读的四个维度
+        headline_checks = [
+            ("信息差悬念", "一个月前" or "现在" or "信息差"),
+            ("技术细节支撑", "实测" or "技术细节" or "内核"),
+            ("谁应该关注", "值得关注如果你" or "谁应该关注"),
+            ("叙事完整性", "相当于" or "故事" or "情节")
+        ]
+        for check_name, keyword in headline_checks:
+            if keyword not in content:
+                issues.append(f"头条缺少{check_name}元素")
+
+    # 10. 趋势洞察数据支撑检查
+    if "## 趋势洞察" in content:
+        # 检查趋势洞察是否有数据或对比支撑
+        data_indicators = ["数据", "对比", "增长", "从", "相比", "同期", "明显快于", "显著高于"]
+        has_data_support = any(indicator in content for indicator in data_indicators)
+        if not has_data_support:
+            issues.append("趋势洞察缺少数据或对比支撑（必须包含具体数据、对比信息或增长趋势）")
+
+    # 11. 互动引导检查
+    if "**[参与方式]**" not in content and "**[反馈与互动]**" not in content:
+        issues.append("缺少互动引导（必须包含参与方式或反馈渠道）")
+
+    # 12. 上期回顾检查（可选，但如果有必须包含追踪信息）
+    if "## 上期回顾" in content:
+        if "星数追踪" not in content and "趋势验证" not in content:
+            issues.append("上期回顾缺少追踪信息（必须包含星数追踪和趋势验证）")
+
+    # 13. 叙事风格检查（必须包含叙事元素）
+    narrative_found = False
+    for keyword in _NARRATIVE_KEYWORDS:
+        if keyword in content:
+            narrative_found = True
+            break
+    if not narrative_found:
+        issues.append("内容缺少叙事风格元素（必须包含场景化描述、信息差悬念、技术细节等）")
+
+    # 14. 三轮工作流检查（信息提取→判断生成→文案润色）
+    # 检查是否有明显的三段式结构：信息提取（结构化）、判断生成（分析）、文案润色（叙事）
+    has_structure = (
+        "相当于" in content and  # 信息提取（场景化）
+        "值得注意的是" in content and  # 判断生成（分析）
+        "一个月前" in content  # 文案润色（叙事）
+    )
+    if not has_structure:
+        issues.append("内容结构不符合三轮工作流要求（信息提取→判断生成→文案润色）")
+
+    # 15. 字数检查（新范围 800-1600 字）
+    char_count = len(content.replace(" ", "").replace("\n", ""))
+    if char_count < 800:
+        issues.append(f"内容过短：{char_count} 字（最少 800 字）")
+    if char_count > 1600:
+        issues.append(f"内容过长：{char_count} 字（最多 1600 字）")
+
+    # 16. 禁用词检查
     for word in _BANNED_WORDS:
         if word in content:
             issues.append(f"包含禁用词：「{word}」")
+
+    # 17. emoji密度检查（每100字不超过3个emoji）
+    emoji_count = sum(1 for char in content if char in ["🔴", "🟡", "🟢", "🔥", "📰", "🧭", "💡", "📊", "📋", "💬"])
+    if char_count > 0:
+        emoji_density = emoji_count / (char_count / 100)
+        if emoji_density > 3:
+            issues.append(f"emoji密度过高：{emoji_density:.1f}个/100字（建议不超过3个）")
+
+    # 18. 行动建议时效性检查
+    if "**[本周作业]**" in content or "**[讨论问题]**" in content:
+        if "为什么是这周而不是下周" not in content and "时效理由" not in content:
+            issues.append("行动建议缺少时效性理由（必须包含「为什么是这周而不是下周」的理由）")
 
     return issues
 

@@ -101,7 +101,7 @@ def load_config() -> AppConfig:
             disable_thinking=os.getenv("LLM_DISABLE_THINKING", "").lower() == "true",
         ),
         github=GitHubConfig(
-            token=os.getenv("GITHUB_TOKEN", ""),
+            token=os.getenv("GITHUB_TRENDING_TOKEN", ""),
             report_repo=os.getenv("GITHUB_REPORT_REPO", ""),
         ),
         news=NewsConfig(
@@ -136,7 +136,7 @@ def validate_config(config: AppConfig) -> list[str]:
 
     # 推荐项
     if not config.github.token:
-        warnings.append("⚠️  [推荐] GITHUB_TOKEN 未设置，GitHub API 速率受限(60次/小时)，报告无法推送")
+        warnings.append("⚠️  [推荐] GITHUB_TRENDING_TOKEN 未设置，GitHub API 速率受限(60次/小时)，报告无法推送")
     elif not config.github.report_repo:
         warnings.append("⚠️  [可选] GITHUB_REPORT_REPO 未设置，报告将只保存到本地")
 

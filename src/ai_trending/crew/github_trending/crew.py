@@ -263,12 +263,12 @@ class GitHubTrendingOrchestrator:
         base_query: str,
     ) -> list[dict[str, Any]]:
         """调用 GitHub Search API，聚合候选仓库。"""
-        token = os.environ.get("GITHUB_TOKEN", "")
+        token = os.environ.get("GITHUB_TRENDING_TOKEN", "")
         headers = {"Accept": "application/vnd.github+json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         else:
-            log.warning("GITHUB_TOKEN 未设置，GitHub Search API 速率限制较低")
+            log.warning("GITHUB_TRENDING_TOKEN 未设置，GitHub Search API 速率限制较低")
 
         repo_map: dict[str, dict[str, Any]] = {}
         started_at = time.time()
@@ -296,7 +296,7 @@ class GitHubTrendingOrchestrator:
 
             remaining = int(response.headers.get("X-RateLimit-Remaining", 99))
             if remaining <= 1:
-                log.warning("GitHub API 速率限制即将耗尽，建议配置 GITHUB_TOKEN")
+                log.warning("GitHub API 速率限制即将耗尽，建议配置 GITHUB_TRENDING_TOKEN")
 
             try:
                 payload = response.json()
@@ -582,7 +582,7 @@ class GitHubTrendingOrchestrator:
         if not final_repos:
             return (
                 f"未能从 GitHub 搜索到与 '{query}' 相关的热门仓库。\n"
-                "请检查网络连接、GITHUB_TOKEN 或模型配置。"
+                "请检查网络连接、GITHUB_TRENDING_TOKEN 或模型配置。"
             )
 
         return self._format_text_output(final_repos, query, keywords, summary, hot_signals)

@@ -14,7 +14,7 @@ import pytest
 @pytest.fixture
 def github_env(monkeypatch):
     """注入 GitHub 相关环境变量."""
-    monkeypatch.setenv("GITHUB_TOKEN", "fake-github-token")
+    monkeypatch.setenv("GITHUB_TRENDING_TOKEN", "fake-github-token")
     monkeypatch.setenv("GITHUB_REPORT_REPO", "test-owner/test-repo")
 
 
