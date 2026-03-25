@@ -49,6 +49,11 @@
     "mcp-use/mcp-use": "2026-03-24",
     "modelscope/ms-swift": "2026-03-24",
     "microsoft/agent-framework": "2026-03-24",
-    "awslabs/mcp": "2026-03-24"
+    "awslabs/mcp": "2026-03-24",
+    "iflytek/astron-agent": "2026-03-25",
+    "alibaba/spring-ai-alibaba": "2026-03-25",
+    "modelcontextprotocol/registry": "2026-03-25",
+    "kreuzberg-dev/kreuzberg": "2026-03-25",
+    "0x4m4/hexstrike-ai": "2026-03-25"
   }
 }
