@@ -207,31 +207,89 @@ def _fix_news_item_lines(line: str) -> list[str]:
       来源：xxx | [链接](url)
     """
     import re
-    # 只处理以 **[类别]** 开头且包含 " > " 的行
-    if not re.match(r"^\*\*\[", line):
-        return [line]
-    if " > " not in line:
-        return [line]
-
-    # 按 " > " 分割出标题和后半部分
-    title_part, rest = line.split(" > ", 1)
-
-    # 再从后半部分分割出判断和来源
-    # 来源部分以 "来源：" 开头
-    if "来源：" in rest:
-        judgment_part, source_part = rest.split("来源：", 1)
-        judgment_part = judgment_part.strip()
-        source_part = "来源：" + source_part.strip()
-    else:
-        judgment_part = rest.strip()
-        source_part = ""
-
-    result = [title_part.strip()]
-    if judgment_part:
-        result.append(f"> {judgment_part}")
-    if source_part:
-        result.append(source_part)
-    return result
+    
+    # 处理新闻条目：以 ** 开头且包含 > 的行
+    if re.match(r"^\*\*\[", line) and " > " in line:
+        # 按 " > " 分割出标题和后半部分
+        title_part, rest = line.split(" > ", 1)
+        
+        # 再从后半部分分割出判断和来源
+        if "来源：" in rest:
+            judgment_part, source_part = rest.split("来源：", 1)
+            judgment_part = judgment_part.strip()
+            source_part = "来源：" + source_part.strip()
+        else:
+            judgment_part = rest.strip()
+            source_part = ""
+        
+        result = [title_part.strip()]
+        if judgment_part:
+            result.append(f"> {judgment_part}")
+        if source_part:
+            result.append(source_part)
+        
+        # 在新闻条目之间添加空行分隔
+        if len(result) > 1:
+            result.append("")
+        
+        return result
+    
+    # 处理新的新闻格式：以 **🟢 一手信源** 开头且包含 > 的行
+    elif re.match(r"^\*\*[🟢🟡🔴]", line) and " > " in line:
+        # 按 " > " 分割出标题和后半部分
+        title_part, rest = line.split(" > ", 1)
+        
+        # 再从后半部分分割出判断和来源
+        if "来源：" in rest:
+            judgment_part, source_part = rest.split("来源：", 1)
+            judgment_part = judgment_part.strip()
+            source_part = "来源：" + source_part.strip()
+        else:
+            judgment_part = rest.strip()
+            source_part = ""
+        
+        result = [title_part.strip()]
+        if judgment_part:
+            result.append(f"> {judgment_part}")
+        if source_part:
+            result.append(source_part)
+        
+        # 在新闻条目之间添加空行分隔
+        if len(result) > 1:
+            result.append("")
+        
+        return result
+    
+    # 处理更复杂的新闻格式：包含 **So What** 和 来源： 的行
+    elif " > **So What**" in line and "来源：" in line:
+        # 按 " > **So What** " 分割
+        if " > **So What** " in line:
+            title_part, rest = line.split(" > **So What** ", 1)
+        else:
+            title_part, rest = line.split(" > **So What**", 1)
+        
+        # 再从后半部分分割出判断和来源
+        if "来源：" in rest:
+            judgment_part, source_part = rest.split("来源：", 1)
+            judgment_part = "**So What** " + judgment_part.strip()
+            source_part = "来源：" + source_part.strip()
+        else:
+            judgment_part = "**So What** " + rest.strip()
+            source_part = ""
+        
+        result = [title_part.strip()]
+        if judgment_part:
+            result.append(f"> {judgment_part}")
+        if source_part:
+            result.append(source_part)
+        
+        # 在新闻条目之间添加空行分隔
+        if len(result) > 1:
+            result.append("")
+        
+        return result
+    
+    return [line]
 
 
 def _fix_github_item_fields(line: str) -> list[str]:
@@ -260,6 +318,11 @@ def _fix_github_item_fields(line: str) -> list[str]:
             part = "- " + part
         if part:
             result.append(part)
+    
+    # 在GitHub项目之间添加空行分隔
+    if len(result) > 1:
+        result.append("")
+    
     return result
 
 
@@ -285,22 +348,73 @@ def _fix_markdown_spacing(content: str) -> str:
             # 再尝试拆分 GitHub 字段（- 🏷️ ... - 💻 ... - 📈 ...）
             expanded_lines.extend(_fix_github_item_fields(line))
 
-    # 第二步：补全缺失的空行
+    # 第二步：补全缺失的空行 - 增强版
     result: list[str] = []
     for i, line in enumerate(expanded_lines):
         is_heading = re.match(r"^#{1,6}\s", line)
         is_link_item = re.match(r"^-\s+🔗", line)
         # 新闻条目以 **[类别]** 开头，前面必须有空行，否则会被渲染成大标题
         is_news_item = re.match(r"^\*\*\[", line)
-
-        if (is_heading or is_link_item or is_news_item) and i > 0:
+        is_list_item = re.match(r"^\s*-\s+", line)
+        is_blockquote = re.match(r"^>\s+", line)
+        is_separator = re.match(r"^-{3,}", line)
+        
+        # 确保标题前有足够的空行
+        if is_heading and i > 0:
             prev = result[-1] if result else ""
             if prev.strip() != "":
+                result.append("")
+                result.append("")
+        
+        # 确保新闻条目前有空行
+        elif is_news_item and i > 0:
+            prev = result[-1] if result else ""
+            if prev.strip() != "":
+                result.append("")
+        
+        # 确保分隔线前后有空行
+        elif is_separator and i > 0:
+            prev = result[-1] if result else ""
+            if prev.strip() != "":
+                result.append("")
+            result.append(line)
+            result.append("")
+            continue
+        
+        # 确保列表项之间有适当的间距
+        elif is_list_item and i > 0:
+            prev = result[-1] if result else ""
+            prev_is_list = re.match(r"^\s*-\s+", prev)
+            if prev_is_list and prev.strip() != "":
+                result.append("")
+        
+        # 确保引用块前有空行
+        elif is_blockquote and i > 0:
+            prev = result[-1] if result else ""
+            if prev.strip() != "" and not re.match(r"^>\s+", prev):
                 result.append("")
 
         result.append(line)
 
-    return "\n".join(result)
+    # 第三步：额外处理，确保主要section之间有更多空行
+    final_lines: list[str] = []
+    for i, line in enumerate(result):
+        # 主要section标题（## 开头）前加两个空行
+        if re.match(r"^##\s+", line) and i > 0:
+            prev = final_lines[-1] if final_lines else ""
+            if prev.strip() != "":
+                final_lines.append("")
+                final_lines.append("")
+        
+        # 子section标题（### 开头）前加一个空行
+        elif re.match(r"^###\s+", line) and i > 0:
+            prev = final_lines[-1] if final_lines else ""
+            if prev.strip() != "":
+                final_lines.append("")
+        
+        final_lines.append(line)
+
+    return "\n".join(final_lines)
 
 
 @CrewBase
