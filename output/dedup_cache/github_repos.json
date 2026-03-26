@@ -24,6 +24,11 @@
     "block/goose": "2026-03-26",
     "NVIDIA/TensorRT-LLM": "2026-03-26",
     "hiyouga/LlamaFactory": "2026-03-26",
-    "netdata/netdata": "2026-03-26"
+    "netdata/netdata": "2026-03-26",
+    "microsoft/playwright-mcp": "2026-03-26",
+    "github/github-mcp-server": "2026-03-26",
+    "karpathy/autoresearch": "2026-03-26",
+    "openclaw/openclaw": "2026-03-26",
+    "jeecgboot/JeecgBoot": "2026-03-26"
   }
 }
