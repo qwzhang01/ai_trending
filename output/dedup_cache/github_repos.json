@@ -14,6 +14,16 @@
     "superset-sh/superset": "2026-03-26",
     "ykdojo/claude-code-tips": "2026-03-26",
     "n8n-io/n8n": "2026-03-26",
-    "google-gemini/gemini-cli": "2026-03-26"
+    "google-gemini/gemini-cli": "2026-03-26",
+    "bytedance/deer-flow": "2026-03-26",
+    "bytedance/UI-TARS-desktop": "2026-03-26",
+    "lobehub/lobehub": "2026-03-26",
+    "activepieces/activepieces": "2026-03-26",
+    "bentoml/BentoML": "2026-03-26",
+    "PrefectHQ/fastmcp": "2026-03-26",
+    "block/goose": "2026-03-26",
+    "NVIDIA/TensorRT-LLM": "2026-03-26",
+    "hiyouga/LlamaFactory": "2026-03-26",
+    "netdata/netdata": "2026-03-26"
   }
 }
