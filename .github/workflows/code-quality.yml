@@ -1,0 +1,107 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # ── Job 1: Ruff Lint ──────────────────────────────────────────────────────
+  lint:
+    name: Ruff Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dev dependencies
+      run: uv sync --group dev
+
+    - name: Run Ruff lint
+      run: uv run ruff check src/ tests/ --output-format=github
+
+    - name: Run Ruff format check
+      run: uv run ruff format src/ tests/ --check
+
+  # ── Job 2: Mypy Type Check ────────────────────────────────────────────────
+  type-check:
+    name: Mypy Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv sync --group dev
+        uv pip install -e .
+
+    - name: Run mypy
+      run: uv run mypy src/ai_trending/ --ignore-missing-imports
+      # 忽略缺失的第三方 stub，避免 crewai/litellm 等库缺少 py.typed 导致误报
+
+  # ── Job 3: Unit Tests ─────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install uv
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        uv sync --group dev
+        uv pip install -e .
+
+    - name: Run unit tests
+      run: uv run pytest tests/unit/ -v --cov=src/ai_trending --cov-report=xml --cov-report=term-missing
+      env:
+        # 单元测试不需要真实密钥，使用占位值避免 config 加载报错
+        OPENAI_API_KEY: "sk-test-placeholder"
+        MODEL: "openai/gpt-4o"
+        MODEL_LIGHT: "openai/gpt-4o-mini"
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: coverage.xml
+        retention-days: 7

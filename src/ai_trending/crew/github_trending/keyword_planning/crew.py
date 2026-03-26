@@ -35,11 +35,11 @@ class KeywordPlanningCrew:
 
     @task
     def plan_keywords_task(self) -> Task:
-        """关键词规划 Task，输出 GitHubSearchPlan。"""
+        """关键词规划 Task，输出 JSON 文本（由编排器解析为 GitHubSearchPlan）。"""
         return Task(
             config=self.tasks_config["plan_keywords"],  # type: ignore[index]
-            # 不使用 output_pydantic，避免 instructor 与部分 LLM 的兼容性问题
-            # 由 GitHubTrendingOrchestrator._extract_pydantic_output 手动解析 JSON
+            # 不使用 output_pydantic，避免 instructor 在 DeepSeek 等模型上触发多 tool call 报错
+            # 编排器的 _parse_model_from_text 会从 raw 文本中解析 GitHubSearchPlan
         )
 
     @crew

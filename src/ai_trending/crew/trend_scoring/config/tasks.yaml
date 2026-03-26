@@ -1,0 +1,73 @@
+score_trends_task:
+  description: >
+    基于以下采集到的 GitHub 项目数据和行业新闻，对每个项目/新闻进行结构化评分，
+    并为日报的叙事性表达提供判断依据。
+
+    ## GitHub 项目数据
+    {github_data}
+
+    ## 行业新闻数据
+    {news_data}
+
+    ## 重要约束（违反则输出无效）
+    - 只对上方数据中真实存在的项目和新闻评分，绝不虚构任何项目名称、仓库地址或新闻标题
+    - repo 字段必须与原始数据中的仓库路径完全一致（格式：owner/repo_name）
+    - 如果原始数据为空或无效，scored_repos / scored_news 返回空数组
+
+    ## 对每个 GitHub 项目的评分要求
+
+    scored_repos 中每个元素包含：
+    - repo: 仓库全名（必须与原始数据完全一致）
+    - name: 项目显示名称
+    - url: GitHub 完整 URL
+    - stars: Star 数（从原始数据中读取，不得估算或虚构）
+    - language: 主要编程语言
+    - is_ai: 是否为 AI 相关项目（true/false）
+    - category: 项目类别（Agent框架/推理框架/多模态/开发工具/数据处理/模型微调/评测基准/应用集成）
+    - scores: 包含 热度/技术前沿性/成长潜力/综合 四个维度评分（各 0-10）
+    - one_line_reason: 一句话说明，不超过 30 字，说清楚技术价值或应用场景
+    - story_hook: 故事开篇钩子，不超过 20 字，制造信息差或悬念
+    - technical_detail: 具体技术细节，不超过 25 字，支撑判断
+    - target_audience: 谁应该关注，不超过 15 字，明确指向
+    - scenario_description: 场景化描述，不超过 25 字
+
+    评分标准:
+    - 热度: Star 数 >50k=9-10, >20k=7-8, >10k=5-6, >5k=3-4, <5k=1-2
+    - 技术前沿性: 是否引入新架构/新范式。已有技术封装、UI 套壳或教程类不超过 3 分
+    - 成长潜力: 架构设计合理性、社区活跃度、近期更新频率
+    - 综合: 热度 30% + 前沿性 40% + 潜力 30%，保留一位小数
+
+    ## 对每条行业新闻的评分要求
+
+    scored_news 中每个元素包含：
+    - title: 新闻标题（保留原文，不改写）
+    - url: 新闻链接
+    - source: 来源名称
+    - category: 新闻类别（大厂动态/技术突破/开源生态/投融资/行业观察/产品发布/政策监管）
+    - impact_score: 行业影响力评分（0-10）
+    - impact_reason: 一句话说明行业影响，不超过 35 字，必须是判断句
+    - so_what_analysis: So What 分析，不超过 40 字，指出新闻背后真正值得注意的点
+    - credibility_label: 可信度标签（🟢 一手信源 / 🟡 社区讨论 / 🔴 待验证）
+    - time_window: 时间窗口（短期（1-3个月）/中期（3-12个月）/长期（1年以上））
+    - affected_audience: 受影响群体（技术决策者/开发者/投资人/行业观察者）
+
+    ## 趋势洞察生成
+
+    daily_summary 包含：
+    - top_trend: 今天最值得关注的一个趋势，不超过 30 字，有数据支撑
+    - hot_directions: 3-5 个热点技术方向，每个 3-6 字
+    - overall_sentiment: 整体情绪（积极/中性/消极）
+    - causal_explanation: 因果解释，不超过 50 字，说明为什么会这样
+    - data_support: 数据支撑，不超过 40 字，用数据讲判断
+    - forward_looking: 前瞻预判，不超过 35 字，预测下一步发展
+
+    当前日期: {current_date}
+
+    输出严格 JSON 格式，不要输出任何 JSON 以外的内容。
+  expected_output: >
+    返回一个符合 TrendScoringOutput 模型的结构化 JSON，包含：
+    - scored_repos: GitHub 项目评分列表（按综合评分从高到低排列）
+    - scored_news: 新闻评分列表（按影响力评分从高到低排列）
+    - daily_summary: 今日趋势洞察汇总（含 top_trend、hot_directions、causal_explanation 等字段）
+    所有字段必须基于原始数据，不得虚构。
+  agent: trend_scorer

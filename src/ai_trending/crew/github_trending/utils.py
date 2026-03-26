@@ -200,3 +200,51 @@ def model_to_dict(model: BaseModel) -> dict[str, Any]:
 def is_searchable_keyword(keyword: str) -> bool:
     """判断关键词是否适合直接用于 GitHub 搜索。"""
     return bool(re.search(r"[A-Za-z0-9]", keyword or ""))
+
+
+# ── 关键词辅助方法 ────────────────────────────────────────────
+
+def default_keywords_for_query(base_query: str) -> list[str]:
+    """兜底关键词策略：根据主题返回预定义关键词列表。
+
+    Args:
+        base_query: 用户原始主题，例如 "AI"、"MCP"
+
+    Returns:
+        去重后的关键词列表，最多 5 个
+    """
+    normalized = base_query.strip().lower()
+    fallback = TREND_KEYWORD_MAP.get(
+        normalized,
+        [base_query, "AI agent", "MCP", "LLM inference"],
+    )
+    merged: list[str] = []
+    if is_searchable_keyword(base_query):
+        merged.append(base_query.strip())
+    merged.extend(fallback)
+    return unique_preserve_order(merged)[:5]
+
+
+def sanitize_keywords(keywords: list[str], base_query: str) -> list[str]:
+    """清洗 CrewAI 输出的关键词，确保可用于 GitHub 检索。
+
+    Args:
+        keywords:   CrewAI 输出的原始关键词列表
+        base_query: 用户原始主题（始终作为第一个关键词）
+
+    Returns:
+        清洗、去重后的关键词列表，最多 5 个
+    """
+    cleaned: list[str] = []
+    for keyword in keywords:
+        for part in re.split(r"[,/\n]", keyword):
+            candidate = part.strip().strip('"').strip("'")
+            if candidate and is_searchable_keyword(candidate):
+                cleaned.append(candidate)
+
+    merged: list[str] = []
+    if is_searchable_keyword(base_query):
+        merged.append(base_query.strip())
+    merged.extend(cleaned)
+    merged.extend(default_keywords_for_query(base_query))
+    return unique_preserve_order(merged)[:5]

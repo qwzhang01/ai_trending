@@ -15,9 +15,13 @@ class ReportOutput(BaseModel):
     content: str = Field(
         default="",
         description=(
-            "完整的 AI 日报 Markdown 文本，必须包含四个 Section："
-            "标题导语、GitHub 热点项目（3-5个）、AI 热点新闻（6-8条）、趋势洞察（3-5条）。"
-            "总字数 700-1500 字，无禁用词，无感叹号。"
+            "完整的 AI 日报 Markdown 文本，包含七段式结构："
+            "标题（含今日信号强度 + 今日一句话）、今日头条（1条深度解读）、"
+            "GitHub 热点项目（2-4个，含星数增长上下文）、"
+            "AI 热点新闻（4-6条，含可信度标签 + So What 分析）、"
+            "趋势洞察（3-5条，含数据支撑）、本周行动建议（1-2条可落地任务）、"
+            "上期回顾（可选，有历史追踪数据时包含）。"
+            "总字数 800-2000 字，无禁用词，无感叹号。"
         ),
     )
     validation_issues: list[str] = Field(

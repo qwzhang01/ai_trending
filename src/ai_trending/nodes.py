@@ -3,15 +3,15 @@
 节点职责:
   - collect_github_node: 调用 GitHubTrendingTool 抓取热门项目（工具内部使用 CrewAI 规划与分析）
   - collect_news_node:   触发 NewsCollectCrew（多源抓取 + CrewAI Agent LLM 筛选）
-  - score_trends_node:   调用 LLM 结构化评分（核心差异点）
+  - score_trends_node:   调用 TrendScoringCrew 结构化评分（Agent 机制，JSON 输出）
   - write_report_node:   调用 ReportWritingCrew 撰写 Markdown 日报
   - publish_node:        调用 publish tools 推送到各渠道
 
 设计原则:
   - 每个节点只读取需要的 state 字段，写入自己负责的字段
-  - Tool 调用和 LLM 调用分离，便于独立测试
+  - 节点层禁止直接调用 LLM，所有 LLM 判断必须封装为 CrewAI Crew
   - GitHub 采集的 CrewAI 编排下沉到工具内部，节点只负责接线
-  - 评分节点直接调用 LiteLLM（JSON 模式，精确 prompt 控制）
+  - 评分节点调用 TrendScoringCrew（Agent 机制，结构化 Pydantic 输出）
   - 报告撰写节点调用 ReportWritingCrew（Agent 机制，格式规范强约束）
 """
 
@@ -19,112 +19,49 @@ from __future__ import annotations
 
 from typing import Any
 
-from ai_trending.llm_client import call_llm_with_usage
 from ai_trending.logger import get_logger
 
 log = get_logger("nodes")
 
 
-# ==================== Prompt 模板 ====================
+# ==================== 工具函数 ====================
 
-SCORING_SYSTEM_PROMPT = """你是一位数据驱动的技术分析师，专注于 AI 领域的量化评估。
-你的评分标准严格、客观、一致，不受项目知名度影响。
-你只输出结构化 JSON，不输出任何多余文字。
+def _merge_token_usage(
+    prev: dict[str, int],
+    new: dict[str, int],
+    node_name: str,
+) -> dict[str, int]:
+    """将本次节点的 token 用量累加到全局 token_usage 字典。
 
-**新增职责：为叙事性日报提供判断依据**
-- 为每个项目生成「一句话故事」：这个项目最值得讲的故事是什么？
-- 为每条新闻生成「So What 分析」：这件事的实质是什么？对谁有什么影响？
-- 为趋势洞察生成「因果解释」：为什么会这样？背后的驱动力是什么？
-"""
+    Args:
+        prev:      State 中已有的 token_usage（可能为空 {}）
+        new:       本次 Crew 调用返回的 token 用量
+        node_name: 节点名称，用于记录各节点分项用量
 
-SCORING_PROMPT_TEMPLATE = """基于以下采集到的 GitHub 项目数据和行业新闻，对每个项目/新闻进行结构化评分，
-并为日报的叙事性表达提供判断依据。
-
-## GitHub 项目数据
-{github_data}
-
-## 行业新闻数据
-{news_data}
-
-## 重要约束（违反则输出无效）
-- 只对上方数据中真实存在的项目和新闻评分，绝不虚构任何项目名称、仓库地址或新闻标题
-- repo 字段必须与原始数据中的仓库路径完全一致（格式：owner/repo_name）
-- 如果原始数据为空或无效，scored_repos / scored_news 返回空数组
-
-## 评分要求
-
-对每个 GitHub 项目，输出 JSON:
-{{
-  "repo": "owner/repo_name（必须与原始数据完全一致）",
-  "name": "项目显示名称",
-  "url": "GitHub 完整 URL",
-  "stars": 数字（从原始数据中读取，不得估算或虚构）,
-  "language": "主要编程语言",
-  "is_ai": true/false,
-  "category": "Agent框架 / 推理框架 / 多模态 / 开发工具 / 数据处理 / 模型微调 / 评测基准 / 应用集成",
-  "scores": {{
-    "热度": 0-10,
-    "技术前沿性": 0-10,
-    "成长潜力": 0-10,
-    "综合": 0-10
-  }},
-  "one_line_reason": "一句话说明，不超过 30 字，说清楚技术价值或应用场景",
-  
-  **新增字段（为叙事性日报提供素材）**
-  "story_hook": "故事开篇钩子，不超过 20 字，制造信息差或悬念，如「一个月前还没人听过这个名字，现在它是...」",
-  "technical_detail": "具体技术细节，不超过 25 字，支撑判断，如「针对 Metal 后端重写了推理内核，实测吞吐量高出 40%」",
-  "target_audience": "谁应该关注，不超过 15 字，明确指向，如「在 Mac 上做本地推理的开发者」",
-  "scenario_description": "场景化描述，用「相当于……的……版」句式，不超过 25 字，如「相当于苹果硅设备的本地化 LLM 推理服务优化版」"
-}}
-
-评分标准:
-- 热度: Star 数 >50k=9-10, >20k=7-8, >10k=5-6, >5k=3-4, <5k=1-2
-- 技术前沿性: 是否引入新架构/新范式。已有技术封装、UI 套壳或教程类不超过 3 分
-- 成长潜力: 架构设计合理性、社区活跃度、近期更新频率
-- 综合: 热度 30% + 前沿性 40% + 潜力 30%，保留一位小数
-
-对每条行业新闻，输出 JSON:
-{{
-  "title": "新闻标题（保留原文，不改写）",
-  "url": "新闻链接",
-  "source": "来源名称",
-  "category": "大厂动态 / 技术突破 / 开源生态 / 投融资 / 行业观察 / 产品发布 / 政策监管",
-  "impact_score": 0-10,
-  "impact_reason": "一句话说明行业影响，不超过 35 字，必须是判断句",
-  
-  **新增字段（为 So What 分析提供素材）**
-  "so_what_analysis": "So What 分析，不超过 40 字，指出新闻背后真正值得注意的点，如「值得注意的不是技术本身，而是信号：连核能这种强监管行业都开始买单了」",
-  "credibility_label": "可信度标签：🟢 一手信源 / 🟡 社区讨论 / 🔴 待验证",
-  "time_window": "时间窗口：短期（1-3个月）/中期（3-12个月）/长期（1年以上）",
-  "affected_audience": "受影响群体：技术决策者 / 开发者 / 投资人 / 行业观察者"
-}}
-
-## 趋势洞察生成
-
-基于所有评分数据，生成今日趋势洞察：
-{{
-  "daily_summary": {{
-    "top_trend": "今天最值得关注的一个趋势，不超过 30 字，有数据支撑，如「LLMOps 正在从可选变成必选」",
-    "hot_directions": ["技术方向1（3-6字）", "技术方向2", "技术方向3"],
-    "overall_sentiment": "积极/中性/消极",
-    
-    **新增字段（为趋势洞察提供叙事素材）**
-    "causal_explanation": "因果解释，不超过 50 字，说明为什么会这样，如「企业发现自己拼凑的 RAG + Agent + 监控工具链维护成本太高了，所以转向全链路平台」",
-    "data_support": "数据支撑，不超过 40 字，用数据讲判断而不是装饰判断，如「过去一个季度，全链路 LLM 开发管理平台的整体增速明显快于单点工具」",
-    "forward_looking": "前瞻预判，不超过 35 字，预测下一步发展，如「预计未来 3 个月会有更多企业级 LLMOps 解决方案出现」"
-  }}
-}}
-
-最终输出严格 JSON 格式:
-{{
-  "scored_repos": [ ... ],
-  "scored_news": [ ... ],
-  "daily_summary": {{ ... }}
-}}
-
-不要输出任何 JSON 以外的内容。
-
-当前日期: {current_date}"""
+    Returns:
+        合并后的 token_usage 字典，包含：
+          - prompt_tokens:       累计 prompt token 数
+          - completion_tokens:   累计 completion token 数
+          - total_tokens:        累计总 token 数
+          - successful_requests: 累计成功请求次数
+          - by_node:             各节点分项用量 {node_name: {total_tokens, ...}}
+    """
+    merged: dict[str, Any] = {
+        "prompt_tokens":       prev.get("prompt_tokens", 0)       + new.get("prompt_tokens", 0),
+        "completion_tokens":   prev.get("completion_tokens", 0)   + new.get("completion_tokens", 0),
+        "total_tokens":        prev.get("total_tokens", 0)        + new.get("total_tokens", 0),
+        "successful_requests": prev.get("successful_requests", 0) + new.get("successful_requests", 0),
+    }
+    # 保留各节点分项用量，方便排查哪个节点消耗最多
+    by_node: dict[str, Any] = dict(prev.get("by_node") or {})
+    by_node[node_name] = {
+        "prompt_tokens":       new.get("prompt_tokens", 0),
+        "completion_tokens":   new.get("completion_tokens", 0),
+        "total_tokens":        new.get("total_tokens", 0),
+        "successful_requests": new.get("successful_requests", 0),
+    }
+    merged["by_node"] = by_node
+    return merged
 
 
 # ==================== 节点实现 ====================
@@ -197,7 +134,7 @@ def collect_news_node(state: dict[str, Any]) -> dict[str, Any]:
 def score_trends_node(state: dict[str, Any]) -> dict[str, Any]:
     """节点 3: 结构化评分.
 
-    使用 LLM(default) JSON 模式对采集数据进行量化评分，输出结构化 JSON。
+    调用 TrendScoringCrew（Agent 机制）对采集数据进行量化评分，输出结构化 JSON。
     评分结果供 ReportWritingCrew 决定项目排序和详略。
     """
     current_date = state.get("current_date", "")
@@ -207,31 +144,35 @@ def score_trends_node(state: dict[str, Any]) -> dict[str, Any]:
     log.info("[score_trends] 开始结构化评分")
 
     try:
-        scoring_result, usage = call_llm_with_usage(
-            prompt=SCORING_PROMPT_TEMPLATE.format(
-                github_data=github_data,
-                news_data=news_data,
-                current_date=current_date,
-            ),
-            system_prompt=SCORING_SYSTEM_PROMPT,
-            tier="default",
-            max_tokens=4096,
-            json_mode=True,
+        from ai_trending.crew.trend_scoring import TrendScoringCrew
+
+        output, token_usage = TrendScoringCrew().run(
+            github_data=github_data,
+            news_data=news_data,
+            current_date=current_date,
         )
 
-        log.info(f"[score_trends] 完成, 输出 {len(scoring_result)} 字符, tokens={usage.get('total_tokens', 0)}")
-        return {
-            "scoring_result": scoring_result,
-            "token_usage": usage,
-        }
+        import json
+        scoring_result = json.dumps(output.model_dump(), ensure_ascii=False)
+
+        # 累加 token 用量到 State
+        prev_usage = state.get("token_usage") or {}
+        merged_usage = _merge_token_usage(prev_usage, token_usage, "score_trends")
+
+        log.info(
+            f"[score_trends] 完成，项目评分 {len(output.scored_repos)} 条，"
+            f"新闻评分 {len(output.scored_news)} 条，"
+            f"token 用量 {token_usage.get('total_tokens', 0)}"
+        )
+        return {"scoring_result": scoring_result, "token_usage": merged_usage}
 
     except Exception as e:
-        log.error(f"[score_trends] 评分失败: {e}")
+        log.error(f"[score_trends] TrendScoringCrew 调用失败: {e}")
         # 评分失败时，使用空 JSON 确保下游节点仍可运行
         fallback = '{"scored_repos": [], "scored_news": [], "daily_summary": {"top_trend": "评分数据不可用", "hot_directions": [], "overall_sentiment": "中性"}}'
         return {
             "scoring_result": fallback,
-            "errors": [f"score_trends: {e}"],
+            "errors": [f"score_trends: TrendScoringCrew 失败: {e}"],
         }
 
 
@@ -248,14 +189,23 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
 
     log.info(f"[write_report] 开始撰写日报 ({current_date})")
 
+    # 获取上期回顾追踪数据（失败时返回空字符串，不阻断主流程）
+    previous_report_context = ""
+    try:
+        from ai_trending.crew.report_writing.tracker import PreviousReportTracker
+        previous_report_context = PreviousReportTracker().get_previous_report_context(current_date)
+    except Exception as e:
+        log.warning(f"[write_report] 上期回顾数据获取失败，将省略该 Section: {e}")
+
     try:
         from ai_trending.crew.report_writing import ReportWritingCrew
 
-        output = ReportWritingCrew().run(
+        output, token_usage = ReportWritingCrew().run(
             github_data=github_data,
             news_data=news_data,
             scoring_result=scoring_result,
             current_date=current_date,
+            previous_report_context=previous_report_context,
         )
 
         report = output.content
@@ -267,7 +217,14 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
         report_file = reports_dir / f"{current_date}.md"
         report_file.write_text(report, encoding="utf-8")
 
-        log.info(f"[write_report] 完成，报告已保存到 {report_file} ({len(report)} 字符)")
+        # 累加 token 用量到 State
+        prev_usage = state.get("token_usage") or {}
+        merged_usage = _merge_token_usage(prev_usage, token_usage, "write_report")
+
+        log.info(
+            f"[write_report] 完成，报告已保存到 {report_file} ({len(report)} 字符)，"
+            f"token 用量 {token_usage.get('total_tokens', 0)}"
+        )
 
         # 格式校验问题记录到 errors（不阻断发布）
         errors: list[str] = []
@@ -275,7 +232,7 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
             for issue in output.validation_issues:
                 errors.append(f"write_report/格式校验: {issue}")
 
-        result: dict[str, Any] = {"report_content": report}
+        result: dict[str, Any] = {"report_content": report, "token_usage": merged_usage}
         if errors:
             result["errors"] = errors
         return result
