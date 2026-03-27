@@ -1,51 +1,111 @@
+<div align="center">
+
 # 🤖 AI Trending
 
-**每日 AI 开源项目与新闻聚合报告系统**
+**每天早 8 点，自动给你推送一份有观点的 AI 日报**
 
-基于 LangGraph + CrewAI 构建的全自动 AI 日报生成流水线，每天自动发现 GitHub 热点 AI 项目、采集 AI 领域新闻，由 LLM 分析趋势并生成结构化日报，自动发布到 GitHub 和微信公众号。
+基于 **LangGraph + CrewAI** 构建的全自动 AI 日报生成流水线  
+自动发现 GitHub 热点项目 · 采集多源 AI 新闻 · LLM 分析趋势 · 自动发布
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)](https://www.python.org/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-1.1%2B-orange)](https://github.com/langchain-ai/langgraph)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-1.1%2B-orange?logo=langchain)](https://github.com/langchain-ai/langgraph)
 [![CrewAI](https://img.shields.io/badge/CrewAI-1.11-green)](https://github.com/crewAIInc/crewAI)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-blue?logo=github-actions)](https://github.com/features/actions)
+[![Stars](https://img.shields.io/github/stars/your-username/ai_trending?style=social)](https://github.com/your-username/ai_trending)
 
-[快速开始](#-快速开始) · [架构设计](#-架构设计) · [配置说明](#-配置说明) · [部署方式](#-部署方式) · [贡献指南](./CONTRIBUTING.md)
+🟢 **已上线运行** · 微信公众号「LLM大模型Seven」每日自动推送
 
+[**快速开始**](#-快速开始) · [**架构设计**](#-架构设计) · [**配置说明**](#-配置说明) · [**部署方式**](#-部署方式)
+
+</div>
 
 ---
 
-## ✨ 功能特性
+## 📱 真实运行效果
 
-- 🔍 **GitHub 热点发现** — 自动搜索 GitHub Trending，通过 AI 筛选最有价值的 AI 开源项目
-- 📰 **多源新闻采集** — 聚合 Hacker News、Reddit、NewsData.io、知乎等多个渠道的 AI 新闻
-- 🧠 **AI 趋势分析** — 由 LLM 对项目和新闻进行评分、排名，提炼技术趋势洞察
-- 📝 **结构化日报生成** — 按规范格式自动生成 Markdown 日报，文风克制、信息密度高
-- 📤 **多渠道自动发布** — 支持推送到 GitHub Issues/Pages 和微信公众号草稿箱
-- ⏰ **定时自动运行** — 通过 GitHub Actions 每天定时执行，无需人工干预
-- 📊 **运行指标追踪** — 记录每次运行的 Token 用量、耗时、成本估算
-- 🔔 **Webhook 通知** — 支持企业微信、飞书、钉钉、Slack 机器人通知
+> 以下均为系统自动生成，无人工干预
 
-## 📋 示例输出
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./doc/screenshot-pc-article.png" alt="PC 端文章效果" width="100%" />
+      <br/><sub><b>📖 PC 端文章效果</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./doc/screenshot-wechat-article.jpg" alt="微信公众号文章" width="100%" />
+      <br/><sub><b>📱 微信公众号文章</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./doc/screenshot-wechat-message.jpg" alt="微信消息推送" width="100%" />
+      <br/><sub><b>🔔 微信消息推送</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="./doc/screenshot-terminal.png" alt="终端运行输出" width="100%" />
+      <br/><sub><b>⚡ 终端运行输出</b></sub>
+    </td>
+  </tr>
+</table>
+
+<div align="center">
+  <p>📲 扫码订阅每日 AI 日报</p>
+  <img src="./doc/qrcode_for_gh_2eb1bcbaab95_258.jpg" alt="微信公众号二维码" 
+width="160" />
+</div>
+
+---
+
+## ✨ 这个项目能做什么
+
+| 功能 | 说明 |
+|------|------|
+| 🔍 **GitHub 热点发现** | 自动搜索 GitHub，AI 筛选最有价值的 AI 开源项目，不是简单爬 Trending 页 |
+| 📰 **多源新闻聚合** | Hacker News · Reddit · NewsData.io · 知乎，多渠道并发抓取 + LLM 去噪筛选 |
+| 🧠 **AI 趋势分析** | LLM 对项目和新闻量化评分、排名，提炼真正有价值的技术趋势洞察 |
+| 📝 **结构化日报生成** | 七段式 Markdown 日报，文风克制、信息密度高，有观点不灌水 |
+| 📤 **多渠道自动发布** | GitHub Issues/Pages + 微信公众号草稿箱，各渠道独立容错 |
+| ⏰ **定时全自动运行** | GitHub Actions 每天定时执行，零人工干预 |
+| 📊 **运行指标追踪** | Token 用量、耗时、成本估算，每次运行都有记录 |
+| 🔔 **Webhook 通知** | 企业微信 · 飞书 · 钉钉 · Slack，运行完成自动通知 |
+
+---
+
+## 📋 日报示例
 
 ```markdown
 # 🤖 AI 日报 · 2026-03-25
 
-> LLMOps 从可选变必选，端侧推理需求被持续低估
+**[今日信号强度]** 🟡 常规更新日
+
+> **[今日一句话]** LLMOps 从可选变必选，端侧推理需求被持续低估
+
+---
+
+## 🎯 今日头条
+
+**omlx — 让 Mac 跑大模型终于不再是「能用就行」** ⭐ 6777（+1840）
+
+一个月前还没人听过这个名字，现在它是 Apple Silicon 上跑 LLM 最快的开源方案。
+针对 Metal 后端重写了推理内核，实测 Llama 3 70B 的吞吐量比 llama.cpp 高出 40%。
+增速是同赛道项目的 2 倍——端侧推理的需求显然被低估了。
 
 ---
 
 ## 🔥 GitHub 热点项目
 
-### 1. [omlx](https://github.com/apple/omlx) ⭐ 6777
+### 1. omlx ⭐ 6777（+1840）  推理框架
+### 2. bisheng ⭐ 15432（+1200）  Agent 框架
+### 3. CLI-Anything ⭐ 5210（+890）  开发工具
 
-**Apple Silicon 上最快的开源 LLM 推理框架**
+## 📰 AI 热点新闻（含可信度标签 + So What 分析）
 
-- 🏷️ **类别**：推理框架
-- 💻 **语言**：C++
-- 📈 **趋势信号**：针对 Metal 后端重写推理内核，Llama 3 70B 吞吐量比 llama.cpp 高 40%
+## 🧭 趋势洞察（含数据支撑 + 前瞻预判）
 
-...
+## 💡 本周行动建议（可落地任务 + 时效理由）
+
+## 📊 上期回顾（星数追踪 + 趋势验证）
 ```
 
 > 查看完整示例：[examples/optimized_daily_report_example.md](./examples/optimized_daily_report_example.md)
@@ -54,6 +114,12 @@
 
 ## 🏗️ 架构设计
 
+### 整体分层架构
+
+<div align="center">
+  <img src="./doc/架构分层总览.png" alt="架构分层总览" width="800" />
+</div>
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │  入口层  run.py                                      │
@@ -61,34 +127,55 @@
 │  编排层  LangGraph (graph.py + nodes.py)             │
 │          全局状态流转、并行采集、条件分支              │
 ├──────────────────────┬──────────────────────────────┤
-│  Agent 层            │  Agent 层                    │
-│  CrewAI              │  CrewAI                      │
+│  Agent 层 — CrewAI   │  Agent 层 — CrewAI           │
 │  github_trending/    │  new_collect/                │
-│  (关键词→搜索→排名)   │  (多源抓取→LLM筛选)          │
+│  关键词→搜索→排名     │  多源抓取→LLM筛选            │
+│  trend_scoring/      │  report_writing/             │
+│  量化评分             │  七段式日报撰写               │
 ├──────────────────────┴──────────────────────────────┤
 │  工具层  tools/                                      │
-│  github_trending_tool / ai_news_tool                │
-│  wechat_publish_tool / github_publish_tool          │
+│  github_trending_tool · ai_news_tool                │
+│  wechat_publish_tool · github_publish_tool          │
 ├─────────────────────────────────────────────────────┤
 │  基础设施  llm_client.py / logger.py / retry.py     │
 │           config.py / metrics.py                    │
 └─────────────────────────────────────────────────────┘
 ```
 
-### 数据流
+### LangGraph 状态机流程
+
+<div align="center">
+  <img src="./doc/状态机可视化.png" alt="LangGraph 状态机可视化" width="800" />
+</div>
 
 ```mermaid
-graph LR
-    A[START] --> B[collect_github_node]
-    A --> C[collect_news_node]
-    B --> D[score_trends_node]
-    C --> D
-    D --> E{评分是否成功?}
-    E -->|是| F[write_report_node]
-    E -->|否| G[END]
-    F --> H[publish_node]
-    H --> G
+flowchart TD
+    START(["🚀 START"])
+
+    subgraph PARALLEL["⚡ 并行采集（同时执行）"]
+        N1["📦 collect_github\n关键词规划 + 趋势分析\n写入: github_data"]
+        N2["📰 collect_news\nHN / Reddit / newsdata / 知乎\n写入: news_data"]
+    end
+
+    N3["🏆 score_trends\n量化评分 + 排名\n写入: scoring_result"]
+    N4["✍️ write_report\n七段式 Markdown 日报\n写入: report_content"]
+    N5["📤 publish\nGitHub + 微信公众号\n各渠道独立容错"]
+    END_NODE(["🏁 END"])
+
+    START --> N1
+    START --> N2
+    N1 --> N3
+    N2 --> N3
+    N3 --> N4
+    N4 --> N5
+    N5 --> END_NODE
 ```
+
+### 状态字段流转
+
+<div align="center">
+  <img src="./doc/状态字段流转图.png" alt="状态字段流转图" width="700" />
+</div>
 
 ### 目录结构
 
@@ -97,25 +184,24 @@ ai_trending/
 ├── src/ai_trending/
 │   ├── graph.py              # LangGraph 图定义
 │   ├── nodes.py              # LangGraph 节点实现
-│   ├── llm_client.py         # 统一 LLM 客户端（三档模型）
+│   ├── llm_client.py         # 统一 LLM 客户端（light/default/strong 三档）
 │   ├── config.py             # 配置加载
 │   ├── crew/
 │   │   ├── github_trending/  # GitHub 趋势分析 Crew
 │   │   │   ├── keyword_planning/   # 子 Crew：关键词规划
 │   │   │   └── trend_ranking/      # 子 Crew：趋势排名
-│   │   ├── new_collect/      # 新闻采集 Crew
-│   │   ├── report_writing/   # 日报撰写 Crew
+│   │   ├── new_collect/      # 新闻采集 Crew（多源并发）
 │   │   ├── trend_scoring/    # 趋势评分 Crew
-│   │   └── util/             # 共享工具（去重缓存等）
+│   │   └── report_writing/   # 日报撰写 Crew（七段式）
 │   └── tools/                # 工具层
 │       ├── github_trending_tool.py
 │       ├── github_publish_tool.py
 │       ├── wechat_publish_tool.py
 │       └── ai_news_tool.py
-├── tests/                    # 测试
+├── tests/                    # 单元测试 + 集成测试
 ├── reports/                  # 生成的日报（Markdown）
 ├── output/                   # 生成的微信 HTML
-├── .github/workflows/        # GitHub Actions
+├── .github/workflows/        # GitHub Actions 定时任务
 ├── Dockerfile
 ├── docker-compose.yml
 └── run.py                    # 启动入口
@@ -128,35 +214,29 @@ ai_trending/
 ### 环境要求
 
 - Python 3.10+
-- [uv](https://github.com/astral-sh/uv)（推荐）或 pip
-- OpenAI API Key（或兼容 API）
+- OpenAI API Key（或任意兼容 API）
 - GitHub Token（用于搜索和发布）
 
-### 1. 克隆项目
+### 1. 克隆 & 安装
 
 ```bash
 git clone https://github.com/your-username/ai_trending.git
 cd ai_trending
-```
 
-### 2. 安装依赖
-
-```bash
-# 使用 uv（推荐）
+# 使用 uv（推荐，极速）
 uv sync
 
 # 或使用 pip
 pip install -e .
 ```
 
-### 3. 配置环境变量
+### 2. 配置环境变量
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入必要的 API Key
 ```
 
-最少需要配置以下变量：
+最少只需配置 2 个变量就能跑起来：
 
 ```bash
 # LLM（必填）
@@ -167,16 +247,13 @@ OPENAI_API_KEY=sk-...
 GITHUB_TRENDING_TOKEN=ghp_...
 ```
 
-### 4. 运行
+### 3. 运行
 
 ```bash
-# 使用项目虚拟环境运行
+# 立即生成今日日报
 .venv/bin/python run.py
 
-# 或使用 uv
-uv run python run.py
-
-# 指定日期
+# 指定历史日期
 .venv/bin/python run.py --date 2026-03-25
 
 # 只校验配置，不执行
@@ -186,13 +263,13 @@ uv run python run.py
 .venv/bin/python run.py --verbose
 ```
 
-运行成功后，日报将保存到 `reports/YYYY-MM-DD.md`。
+运行成功后，日报保存到 `reports/YYYY-MM-DD.md`，终端输出指标汇总。
 
 ---
 
 ## ⚙️ 配置说明
 
-完整配置项见 [.env.example](./.env.example)，以下是核心配置：
+完整配置项见 [.env.example](./.env.example)。
 
 ### LLM 配置
 
@@ -200,14 +277,13 @@ uv run python run.py
 |------|------|--------|
 | `MODEL` | 主力模型（内容分析、日报撰写） | `openai/gpt-4o` |
 | `MODEL_LIGHT` | 轻量模型（数据采集、关键词规划） | `openai/gpt-4o-mini` |
-| `MODEL_TOOL` | 工具调用模型（纯工具路由） | 回退到 `MODEL_LIGHT` |
 | `OPENAI_API_KEY` | API Key | — |
 | `OPENAI_API_BASE` | 自定义 API Base（代理/第三方） | OpenAI 官方 |
 | `LLM_TEMPERATURE` | 生成温度 | `0.1` |
 
-> 支持 LiteLLM 格式，可切换到 DeepSeek、Moonshot、Anthropic 等任意兼容服务，只需修改 `.env`，无需改代码。
+> 支持 LiteLLM 格式，可一键切换到 DeepSeek、Moonshot、Anthropic 等，**只改 `.env`，不改代码**。
 
-**切换到 DeepSeek 示例：**
+**切换到 DeepSeek（更便宜）：**
 ```bash
 OPENAI_API_BASE=https://api.deepseek.com/v1
 OPENAI_API_KEY=sk-deepseek-...
@@ -227,7 +303,7 @@ MODEL_LIGHT=deepseek/deepseek-chat
 | 变量 | 说明 |
 |------|------|
 | `NEWSDATA_API_KEY` | [newsdata.io](https://newsdata.io) API Key，扩展新闻源 |
-| `ZHIHU_COOKIE` | 知乎 Cookie，用于获取知乎热榜 AI 内容 |
+| `ZHIHU_COOKIE` | 知乎 Cookie，获取知乎热榜 AI 内容 |
 
 ### 微信公众号配置（可选）
 
@@ -239,10 +315,9 @@ MODEL_LIGHT=deepseek/deepseek-chat
 
 ### 通知配置（可选）
 
-支持企业微信、飞书、钉钉、Slack 机器人通知：
+支持企业微信、飞书、钉钉、Slack：
 
 ```bash
-# 任选其一
 WEBHOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx  # 企业微信
 WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/xxx           # 飞书
 WEBHOOK_URL=https://oapi.dingtalk.com/robot/send?access_token=xxx      # 钉钉
@@ -253,9 +328,9 @@ WEBHOOK_URL=https://hooks.slack.com/services/xxx/xxx/xxx               # Slack
 
 ## 🚢 部署方式
 
-### 方式一：GitHub Actions（推荐）
+### 方式一：GitHub Actions（推荐，零成本）
 
-Fork 本仓库，在 Settings → Secrets 中配置以下 Secrets：
+Fork 本仓库，在 **Settings → Secrets** 中配置以下 Secrets：
 
 | Secret | 说明 |
 |--------|------|
@@ -267,9 +342,7 @@ Fork 本仓库，在 Settings → Secrets 中配置以下 Secrets：
 | `WECHAT_APP_SECRET` | 微信 AppSecret（可选） |
 | `WEBHOOK_URL` | 通知 Webhook（可选） |
 
-配置完成后，每天 UTC 00:00（北京时间 08:00）自动运行，生成的日报会自动 commit 到仓库。
-
-也可以在 Actions 页面手动触发，支持指定日期参数。
+配置完成后，每天 **UTC 00:00（北京时间 08:00）** 自动运行，生成的日报自动 commit 到仓库。也可在 Actions 页面手动触发，支持指定日期。
 
 ### 方式二：Docker
 
@@ -277,10 +350,9 @@ Fork 本仓库，在 Settings → Secrets 中配置以下 Secrets：
 # 构建镜像
 docker build -t ai-trending .
 
-# 手动运行一次
+# 运行一次
 docker run --rm --env-file .env \
   -v $(pwd)/reports:/app/reports \
-  -v $(pwd)/output:/app/output \
   ai-trending
 
 # 指定日期
@@ -302,13 +374,10 @@ docker compose up -d ai-trending-cron
 docker compose logs -f ai-trending-cron
 ```
 
-### 方式四：本地定时任务（cron）
+### 方式四：本地 cron
 
 ```bash
-# 编辑 crontab
-crontab -e
-
-# 每天 08:00 运行（根据实际路径修改）
+# 每天 08:00 运行
 0 8 * * * cd /path/to/ai_trending && .venv/bin/python run.py >> logs/cron.log 2>&1
 ```
 
@@ -316,46 +385,21 @@ crontab -e
 
 ## 🧪 开发与测试
 
-### 运行测试
-
 ```bash
 # 运行所有单元测试
 .venv/bin/python -m pytest tests/unit/ -v
 
-# 运行指定模块测试
-.venv/bin/python -m pytest tests/test_github_trending_tool.py -v
-
-# 查看覆盖率报告
+# 查看覆盖率
 .venv/bin/python -m pytest tests/unit/ --cov=src/ai_trending --cov-report=term-missing
 
 # 运行集成测试（需真实 API Key）
 RUN_INTEGRATION_TESTS=1 .venv/bin/python -m pytest tests/integration/ -v
-```
 
-### 代码质量
-
-```bash
-# 格式化
+# 代码格式化
 .venv/bin/python -m black src/ tests/
 
 # Lint
 .venv/bin/python -m ruff check src/ tests/
-
-# 类型检查
-.venv/bin/python -m mypy src/
-```
-
-### 开发调试
-
-```bash
-# 只校验配置
-.venv/bin/python run.py --dry-run
-
-# 详细日志模式
-.venv/bin/python run.py --verbose
-
-# 指定历史日期（用于调试）
-.venv/bin/python run.py --date 2026-03-17
 ```
 
 ---
@@ -372,7 +416,6 @@ def _fetch_my_source(self, keywords: list[str], top_n: int) -> list[dict]:
     resp = safe_request("GET", "https://api.example.com/news", params={...})
     if resp is None:
         return []
-    # 返回标准格式
     return [{
         "title": item["title"],
         "url": item["url"],
@@ -404,13 +447,13 @@ class DingtalkPublishTool(BaseTool):
 
 ## 📊 运行指标
 
-每次运行后，指标数据保存到 `metrics/` 目录，包含：
+每次运行后，指标数据保存到 `metrics/` 目录：
 
-- 运行状态（成功/失败/取消）
-- 各阶段耗时
-- Token 用量（prompt / completion / total）
-- 估算费用
-- 错误信息
+- ✅ 运行状态（成功/失败/取消）
+- ⏱️ 各阶段耗时
+- 🪙 Token 用量（prompt / completion / total）
+- 💰 估算费用
+- ❌ 错误信息
 
 ---
 
@@ -418,12 +461,13 @@ class DingtalkPublishTool(BaseTool):
 
 欢迎提交 Issue 和 Pull Request！详见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
-**贡献方向：**
-- 新增新闻数据源（Reddit、Twitter/X、微博等）
-- 新增发布渠道（钉钉、飞书、邮件、Telegram 等）
-- 改进日报内容质量（Prompt 优化）
-- 支持更多 LLM 提供商
-- 性能优化（并发采集、缓存策略）
+**欢迎贡献的方向：**
+
+- 📡 新增新闻数据源（Twitter/X、微博、Medium 等）
+- 📤 新增发布渠道（钉钉、飞书、邮件、Telegram 等）
+- 🧠 改进日报内容质量（Prompt 优化）
+- 🔌 支持更多 LLM 提供商
+- ⚡ 性能优化（并发采集、缓存策略）
 
 ---
 
@@ -441,3 +485,5 @@ class DingtalkPublishTool(BaseTool):
 - [CrewAI](https://github.com/crewAIInc/crewAI) — 多 Agent 协作框架
 - [LiteLLM](https://github.com/BerriAI/litellm) — 统一 LLM API 接口
 - [uv](https://github.com/astral-sh/uv) — 极速 Python 包管理器
+
+---

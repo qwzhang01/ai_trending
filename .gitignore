@@ -60,6 +60,7 @@ logs/
 .coverage
 htmlcov/
 .tox/
+coverage.xml
 
 # Package management
 Pipfile.lock
