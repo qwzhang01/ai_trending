@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> type:
     if name == "GitHubTrendingTool":
         from ai_trending.tools.github_trending_tool import GitHubTrendingTool
         return GitHubTrendingTool
