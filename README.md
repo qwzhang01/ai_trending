@@ -28,23 +28,15 @@
 
 <table>
   <tr>
-    <td align="center" width="50%">
-      <img src="./doc/screenshot-pc-article.png" alt="PC 端文章效果" width="100%" />
-      <br/><sub><b>📖 PC 端文章效果</b></sub>
+    <td align="center">
+      <img src="./doc/screenshot-wechat-article.jpg" width="300"/>
+
+<sub>📱 微信公众号</sub>
     </td>
-    <td align="center" width="50%">
-      <img src="./doc/screenshot-wechat-article.jpg" alt="微信公众号文章" width="100%" />
-      <br/><sub><b>📱 微信公众号文章</b></sub>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="./doc/screenshot-wechat-message.jpg" alt="微信消息推送" width="100%" />
-      <br/><sub><b>🔔 微信消息推送</b></sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="./doc/screenshot-terminal.png" alt="终端运行输出" width="100%" />
-      <br/><sub><b>⚡ 终端运行输出</b></sub>
+    <td align="center">
+      <img src="./doc/screenshot-terminal.png" width="480"/>
+
+<sub>⚡ 终端运行</sub>
     </td>
   </tr>
 </table>
