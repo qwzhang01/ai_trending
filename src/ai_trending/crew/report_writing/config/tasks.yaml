@@ -172,7 +172,7 @@ write_report_task:
 
     **思考角度** [提供思考框架，如「从效率提升 vs 创造性工作的角度分析」]
 
-    **参与方式** [如何参与，如「欢迎在评论区分享你的观点，或回复邮件讨论」]
+    **参与方式** [如何参与，如「欢迎在评论区分享你的观点」]
 
     ---
 
@@ -198,12 +198,13 @@ write_report_task:
 
     ---
 
-    *数据截至：{current_date} | 由 AI Agent 自动生成 | 数据来源：GitHub、Hacker News、Reddit 等公开渠道，仅供参考*
 
-    *本报告由开源项目 [ai_trending](https://github.com/qwzhang01/ai_trending) 自动生成，欢迎 Star & Fork*
+    *本报告由Github开源项目 [ai_trending](https://github.com/qwzhang01/ai_trending) 
+    自动生成，欢迎 Star & Fork*
+
+
+    *数据截至：{current_date} | 数据来源：GitHub、Hacker News、Reddit 等公开渠道，仅供参考*
     
-    **反馈与互动**：欢迎分享你的体验、建议或讨论观点，共同完善这份日报。
-    **订阅提醒**：如需每日推送，请关注项目更新或设置邮件订阅。
 
     ===== 写作约束（违反任何一条均视为输出不合格）=====
 

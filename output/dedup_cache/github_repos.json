@@ -29,6 +29,16 @@
     "github/github-mcp-server": "2026-03-26",
     "karpathy/autoresearch": "2026-03-26",
     "openclaw/openclaw": "2026-03-26",
-    "jeecgboot/JeecgBoot": "2026-03-26"
+    "jeecgboot/JeecgBoot": "2026-03-26",
+    "code-yeongyu/oh-my-openagent": "2026-03-27",
+    "oraios/serena": "2026-03-27",
+    "googleapis/genai-toolbox": "2026-03-27",
+    "RunanywhereAI/runanywhere-sdks": "2026-03-27",
+    "sansan0/TrendRadar": "2026-03-27",
+    "mksglu/context-mode": "2026-03-27",
+    "GLips/Figma-Context-MCP": "2026-03-27",
+    "danny-avila/LibreChat": "2026-03-27",
+    "rerun-io/rerun": "2026-03-27",
+    "apache/seatunnel": "2026-03-27"
   }
 }
