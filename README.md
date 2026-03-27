@@ -28,24 +28,26 @@
 
 <table>
   <tr>
-    <td align="center">
-      <img src="./doc/screenshot-wechat-article.jpg" width="300"/>
-
-<sub>📱 微信公众号</sub>
+    <!-- 左：手机截图，控制宽度让高度和右边匹配 -->
+    <td align="center" valign="top" width="38%">
+      <img src="./doc/screenshot-wechat-article.jpg" width="240" />
+      <br/><sub><b>📱 微信公众号文章</b></sub>
     </td>
-    <td align="center">
-      <img src="./doc/screenshot-terminal.png" width="480"/>
-
-<sub>⚡ 终端运行</sub>
+    <!-- 右：两张叠放 -->
+    <td align="center" valign="top" width="62%">
+      <img src="./doc/screenshot-terminal.png" width="420" />
+      <br/><sub><b>⚡ 终端运行输出</b></sub>
+      <br/><br/>
+      <img src="./doc/screenshot-wechat-message.jpg" width="220" />
+      <br/><sub><b>🔔 微信消息推送</b></sub>
     </td>
   </tr>
 </table>
 
-<div align="center">
-  <p>📲 扫码订阅每日 AI 日报</p>
-  <img src="./doc/qrcode_for_gh_2eb1bcbaab95_258.jpg" alt="微信公众号二维码" 
-width="160" />
-</div>
+<p align="center">
+  <b>📲 扫码订阅每日 AI 日报</b><br/>
+  <img src="./doc/qrcode_for_gh_2eb1bcbaab95_258.jpg" width="130" />
+</p>
 
 ---
 
