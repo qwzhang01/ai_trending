@@ -19,10 +19,11 @@
   - 新闻去重：仅对最终出现在文章中的新闻进行去重标记
 """
 
-import json
 import hashlib
+import json
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 from ai_trending.logger import get_logger
 
@@ -34,10 +35,12 @@ KEEP_DAYS = 7
 # 缓存目录（相对于运行目录）
 _CACHE_DIR = Path("output") / "dedup_cache"
 
+
 def _cache_file(name: str) -> Path:
     """返回指定缓存文件的路径，并确保目录存在."""
     _CACHE_DIR.mkdir(parents=True, exist_ok=True)
     return _CACHE_DIR / f"{name}.json"
+
 
 def _load(name: str) -> dict[str, str]:
     """加载缓存文件，返回 {key: first_seen_date} 字典."""
@@ -51,6 +54,7 @@ def _load(name: str) -> dict[str, str]:
         log.warning(f"去重缓存读取失败 [{name}]: {e}，将重置缓存")
         return {}
 
+
 def _save(name: str, seen: dict[str, str]) -> None:
     """将缓存写回文件."""
     path = _cache_file(name)
@@ -62,14 +66,17 @@ def _save(name: str, seen: dict[str, str]) -> None:
     except OSError as e:
         log.warning(f"去重缓存写入失败 [{name}]: {e}")
 
+
 def _expire(seen: dict[str, str], keep_days: int = KEEP_DAYS) -> dict[str, str]:
     """清理超过 keep_days 天的过期记录."""
     cutoff = (datetime.now() - timedelta(days=keep_days)).strftime("%Y-%m-%d")
     return {k: v for k, v in seen.items() if v >= cutoff}
 
+
 def _url_key(url: str) -> str:
     """将 URL 转为稳定的短 key（取 MD5 前 16 位）."""
     return hashlib.md5(url.strip().lower().encode()).hexdigest()[:16]
+
 
 class DedupCache:
     """跨日去重缓存，支持 GitHub 仓库和新闻 URL 两种场景.
@@ -94,7 +101,7 @@ class DedupCache:
         """判断 key 是否从未出现过（只要曾经见过就算重复，包括今天）."""
         return key not in self._seen
 
-    def filter_new(self, items: list, key_fn) -> list:
+    def filter_new(self, items: list, key_fn: Any) -> list:
         """从 items 中过滤出「今天首次出现」的条目.
 
         Args:
@@ -114,7 +121,9 @@ class DedupCache:
                 dup_count += 1
 
         if dup_count:
-            log.info(f"[{self.name}] 去重过滤: 共 {len(items)} 条，排除重复 {dup_count} 条，剩余 {len(new_items)} 条")
+            log.info(
+                f"[{self.name}] 去重过滤: 共 {len(items)} 条，排除重复 {dup_count} 条，剩余 {len(new_items)} 条"
+            )
 
         return new_items
 
@@ -135,6 +144,7 @@ class DedupCache:
             "total_seen": len(self._seen),
             "keep_days": self.keep_days,
         }
+
 
 def make_news_key(url: str, title: str = "") -> str:
     """为新闻条目生成去重 key.

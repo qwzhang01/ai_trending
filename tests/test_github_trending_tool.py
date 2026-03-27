@@ -1,19 +1,18 @@
 """GitHubTrendingTool 测试."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ai_trending.tools.github_trending_tool import (
-    EXCLUDE_REPOS,
     GitHubTrendingInput,
     GitHubTrendingTool,
     _is_excluded,
 )
 
-
 # ── fixtures ──────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def tool():
@@ -56,6 +55,7 @@ def _make_search_response(items=None, status_code=200):
 
 # ── GitHubTrendingInput schema ────────────────────────────────────
 
+
 class TestGitHubTrendingInput:
     def test_default_values(self):
         inp = GitHubTrendingInput()
@@ -69,6 +69,7 @@ class TestGitHubTrendingInput:
 
 
 # ── _is_excluded ──────────────────────────────────────────────────
+
 
 class TestIsExcluded:
     def test_excludes_blacklisted_repo(self):
@@ -118,8 +119,11 @@ class TestIsExcluded:
 
 # ── _run ──────────────────────────────────────────────────────────
 
+
 # 辅助函数：构造 Orchestrator.run 的返回值
-def _make_orchestrator_result(repos=None, summary="测试趋势摘要", hot_signals=None, keywords=None):
+def _make_orchestrator_result(
+    repos=None, summary="测试趋势摘要", hot_signals=None, keywords=None
+):
     """构造 GitHubTrendingOrchestrator.run 的模拟返回值."""
     return (
         repos or [],
@@ -133,7 +137,9 @@ class TestGitHubTrendingToolRun:
     def test_run_returns_formatted_output(self, tool, tmp_output_dir, github_env):
         """Orchestrator 返回仓库时，_run 应返回格式化的 Markdown 输出."""
         repo = _make_repo()
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([repo])
             result = tool._run(query="AI", top_n=5)
 
@@ -143,24 +149,37 @@ class TestGitHubTrendingToolRun:
 
     def test_run_returns_error_when_no_repos(self, tool, tmp_output_dir, github_env):
         """Orchestrator 返回空列表时，_run 应返回错误提示."""
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([])
             result = tool._run(query="AI", top_n=5)
         assert "未能从 GitHub 搜索到" in result
 
     def test_run_filters_excluded_repos(self, tool, tmp_output_dir, github_env):
         """Orchestrator 只返回有效仓库（黑名单过滤在 Orchestrator 内部完成）."""
-        valid_repo = _make_repo(full_name="user/new-llm-framework", name="new-llm-framework")
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
-            mock_cls.return_value.run.return_value = _make_orchestrator_result([valid_repo])
+        valid_repo = _make_repo(
+            full_name="user/new-llm-framework", name="new-llm-framework"
+        )
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
+            mock_cls.return_value.run.return_value = _make_orchestrator_result(
+                [valid_repo]
+            )
             result = tool._run(query="AI", top_n=5)
 
         assert "new-llm-framework" in result
 
     def test_run_respects_top_n(self, tool, tmp_output_dir, github_env):
         """只返回 top_n 个仓库."""
-        repos = [_make_repo(full_name=f"user/repo-{i}", name=f"repo-{i}", stars=1000 - i) for i in range(3)]
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        repos = [
+            _make_repo(full_name=f"user/repo-{i}", name=f"repo-{i}", stars=1000 - i)
+            for i in range(3)
+        ]
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result(repos)
             result = tool._run(query="AI", top_n=3)
         # _format_results 会输出 "### 趋势判断" + 3个仓库的 "### N. ..."，共4个 ###
@@ -169,33 +188,49 @@ class TestGitHubTrendingToolRun:
     def test_run_skips_422_queries(self, tool, tmp_output_dir, github_env):
         """Orchestrator 内部处理 422 错误，_run 应正常返回有效结果."""
         valid_repo = _make_repo()
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
-            mock_cls.return_value.run.return_value = _make_orchestrator_result([valid_repo])
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
+            mock_cls.return_value.run.return_value = _make_orchestrator_result(
+                [valid_repo]
+            )
             result = tool._run(query="AI", top_n=5)
 
         assert "cool-llm-agent" in result
 
-    def test_run_without_github_token_logs_warning(self, tool, tmp_output_dir, monkeypatch):
+    def test_run_without_github_token_logs_warning(
+        self, tool, tmp_output_dir, monkeypatch
+    ):
         """没有 GITHUB_TOKEN 时应正常运行（只是速率限制更低）."""
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([])
             result = tool._run(query="AI", top_n=5)
         # 不应抛出异常
         assert isinstance(result, str)
 
-    def test_run_deduplicates_repos_across_queries(self, tool, tmp_output_dir, github_env):
+    def test_run_deduplicates_repos_across_queries(
+        self, tool, tmp_output_dir, github_env
+    ):
         """Orchestrator 内部处理去重，_run 应返回去重后的结果."""
         repo = _make_repo()
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([repo])
             result = tool._run(query="AI", top_n=5)
         # _format_results 会输出 "### 趋势判断" + 1个仓库的 "### 1. ..."，共2个 ###
         assert result.count("### ") == 2
 
-    def test_run_handles_request_failure_gracefully(self, tool, tmp_output_dir, github_env):
+    def test_run_handles_request_failure_gracefully(
+        self, tool, tmp_output_dir, github_env
+    ):
         """Orchestrator 失败时，_run 应优雅处理并返回错误提示."""
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([])
             result = tool._run(query="AI", top_n=5)
         assert "未能从 GitHub 搜索到" in result
@@ -203,18 +238,23 @@ class TestGitHubTrendingToolRun:
 
 # ── 跨日去重集成 ──────────────────────────────────────────────────
 
+
 class TestGitHubTrendingDedup:
     def test_already_seen_repos_filtered_out(self, tool, tmp_output_dir, github_env):
         """Orchestrator 内部处理去重，_run 应始终返回有效结果."""
         repo = _make_repo()
 
         # 第一次运行
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([repo])
             tool._run(query="AI", top_n=5)
 
         # 第二次运行：Orchestrator 仍然返回该仓库（内部已处理去重降级）
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingOrchestrator"
+        ) as mock_cls:
             mock_cls.return_value.run.return_value = _make_orchestrator_result([repo])
             result = tool._run(query="AI", top_n=5)
 

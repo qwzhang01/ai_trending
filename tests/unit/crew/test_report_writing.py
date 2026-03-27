@@ -1,12 +1,12 @@
 """tests/unit/crew/test_report_writing.py — ReportWritingCrew 单元测试。"""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
-from ai_trending.crew.report_writing import ReportWritingCrew
-from ai_trending.crew.report_writing.models import ReportOutput
-from ai_trending.crew.report_writing.crew import _validate_report
+import pytest
 
+from ai_trending.crew.report_writing import ReportWritingCrew
+from ai_trending.crew.report_writing.crew import _validate_report
+from ai_trending.crew.report_writing.models import ReportOutput
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +92,7 @@ def mock_crew_kickoff_with_report():
 
 # ── _validate_report 测试 ──────────────────────────────────────────────────────
 
+
 class TestValidateReport:
     """测试 _validate_report 校验函数。"""
 
@@ -139,6 +140,7 @@ class TestValidateReport:
 
 # ── ReportOutput 模型测试 ──────────────────────────────────────────────────────
 
+
 class TestReportOutputModel:
     """测试 ReportOutput Pydantic 模型。"""
 
@@ -156,6 +158,7 @@ class TestReportOutputModel:
 
 
 # ── ReportWritingCrew 行为测试 ─────────────────────────────────────────────────
+
 
 class TestReportWritingCrew:
     """测试 ReportWritingCrew 的核心行为。"""

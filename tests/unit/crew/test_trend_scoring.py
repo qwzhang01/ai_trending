@@ -1,8 +1,9 @@
 """tests/unit/crew/test_trend_scoring.py — TrendScoringCrew 单元测试。"""
 
 import json
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from ai_trending.crew.trend_scoring import TrendScoringCrew
 from ai_trending.crew.trend_scoring.models import (
@@ -12,8 +13,8 @@ from ai_trending.crew.trend_scoring.models import (
     TrendScoringOutput,
 )
 
-
 # ── fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def fake_scoring_output() -> TrendScoringOutput:
@@ -90,6 +91,7 @@ def mock_llm():
 
 # ── TrendScoringOutput 模型测试 ────────────────────────────────────────────────
 
+
 class TestTrendScoringOutputModel:
     """测试 TrendScoringOutput Pydantic 模型的字段约束。"""
 
@@ -115,7 +117,9 @@ class TestTrendScoringOutputModel:
 
     def test_scored_news_impact_score_range(self):
         """impact_score 必须在 0-10 范围内。"""
-        with pytest.raises(Exception):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
             ScoredNews(title="test", impact_score=11.0)  # 超出范围
 
     def test_daily_summary_defaults(self):
@@ -139,10 +143,13 @@ class TestTrendScoringOutputModel:
 
 # ── TrendScoringCrew 行为测试 ──────────────────────────────────────────────────
 
+
 class TestTrendScoringCrew:
     """测试 TrendScoringCrew 的核心行为。"""
 
-    def test_run_returns_scoring_output(self, mock_llm, mock_crew_kickoff, fake_scoring_output):
+    def test_run_returns_scoring_output(
+        self, mock_llm, mock_crew_kickoff, fake_scoring_output
+    ):
         """正常输入时，run() 应返回 (TrendScoringOutput, token_usage) 元组。"""
         crew = TrendScoringCrew()
         result = crew.run(
@@ -188,7 +195,11 @@ class TestTrendScoringCrew:
         raw_data = {
             "scored_repos": [{"repo": "owner/repo", "name": "Test", "stars": 100}],
             "scored_news": [],
-            "daily_summary": {"top_trend": "测试趋势", "hot_directions": [], "overall_sentiment": "中性"},
+            "daily_summary": {
+                "top_trend": "测试趋势",
+                "hot_directions": [],
+                "overall_sentiment": "中性",
+            },
         }
         with patch("crewai.Crew.kickoff") as mock:
             mock_result = MagicMock()
@@ -236,11 +247,17 @@ class TestTrendScoringCrew:
 
     def test_parse_from_raw_valid_json(self):
         """_parse_from_raw 能正确解析有效 JSON。"""
-        raw = json.dumps({
-            "scored_repos": [],
-            "scored_news": [],
-            "daily_summary": {"top_trend": "test", "hot_directions": [], "overall_sentiment": "中性"},
-        })
+        raw = json.dumps(
+            {
+                "scored_repos": [],
+                "scored_news": [],
+                "daily_summary": {
+                    "top_trend": "test",
+                    "hot_directions": [],
+                    "overall_sentiment": "中性",
+                },
+            }
+        )
         crew = TrendScoringCrew.__new__(TrendScoringCrew)
         result = crew._parse_from_raw(raw)
         assert result is not None
@@ -254,7 +271,15 @@ class TestTrendScoringCrew:
 
     def test_parse_from_raw_with_markdown_wrapper(self):
         """_parse_from_raw 能处理被 markdown 代码块包裹的 JSON。"""
-        data = {"scored_repos": [], "scored_news": [], "daily_summary": {"top_trend": "", "hot_directions": [], "overall_sentiment": "中性"}}
+        data = {
+            "scored_repos": [],
+            "scored_news": [],
+            "daily_summary": {
+                "top_trend": "",
+                "hot_directions": [],
+                "overall_sentiment": "中性",
+            },
+        }
         raw = f"```json\n{json.dumps(data)}\n```"
         crew = TrendScoringCrew.__new__(TrendScoringCrew)
         result = crew._parse_from_raw(raw)

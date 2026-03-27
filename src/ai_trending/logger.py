@@ -20,7 +20,7 @@ FILE_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _initialized = False
 
 
-def setup_logging(level: str = "INFO", log_file: str | None = None):
+def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
     """初始化日志系统（只执行一次）."""
     global _initialized
     if _initialized:
@@ -69,10 +69,10 @@ class _ColorFormatter(logging.Formatter):
     """控制台彩色日志格式化器."""
 
     COLORS = {
-        logging.DEBUG: "\033[36m",     # cyan
-        logging.INFO: "\033[32m",      # green
-        logging.WARNING: "\033[33m",   # yellow
-        logging.ERROR: "\033[31m",     # red
+        logging.DEBUG: "\033[36m",  # cyan
+        logging.INFO: "\033[32m",  # green
+        logging.WARNING: "\033[33m",  # yellow
+        logging.ERROR: "\033[31m",  # red
         logging.CRITICAL: "\033[1;31m",  # bold red
     }
     RESET = "\033[0m"

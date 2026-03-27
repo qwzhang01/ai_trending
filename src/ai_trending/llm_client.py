@@ -8,7 +8,10 @@
 底层使用 LiteLLM 的 completion API，支持 OpenAI/Claude/Qwen 等 100+ 模型。
 """
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from crewai import LLM
 
 import litellm
 
@@ -79,7 +82,9 @@ def call_llm_with_usage(
         # 部分模型（如火山引擎 doubao 系列）不支持 response_format=json_object
         # 自动降级：去掉 response_format 参数重试，依赖 prompt 中的 JSON 约束
         if json_mode and "response_format" in str(e):
-            log.warning(f"模型不支持 json_object 格式，降级重试（依赖 prompt 约束）: {e}")
+            log.warning(
+                f"模型不支持 json_object 格式，降级重试（依赖 prompt 约束）: {e}"
+            )
             kwargs.pop("response_format", None)
             response = litellm.completion(**kwargs)
         else:
@@ -98,7 +103,7 @@ def call_llm_with_usage(
     return content.strip(), usage_info
 
 
-def build_crewai_llm(tier: str = "default"):
+def build_crewai_llm(tier: str = "default") -> "LLM | None":
     """构建 CrewAI LLM 实例，供 CrewAI Agent 使用.
 
     复用 _get_tier_config 的三级调度逻辑，避免与 crew.py 中重复配置。
@@ -126,5 +131,7 @@ def build_crewai_llm(tier: str = "default"):
         kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         log.info("已关闭 LLM thinking 模式")
 
-    log.info(f"LLM tier={tier} → model={config['model']}, temperature={config['temperature']}")
+    log.info(
+        f"LLM tier={tier} → model={config['model']}, temperature={config['temperature']}"
+    )
     return LLM(**kwargs)

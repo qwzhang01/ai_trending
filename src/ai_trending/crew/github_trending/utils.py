@@ -204,6 +204,7 @@ def is_searchable_keyword(keyword: str) -> bool:
 
 # ── 关键词辅助方法 ────────────────────────────────────────────
 
+
 def default_keywords_for_query(base_query: str) -> list[str]:
     """兜底关键词策略：根据主题返回预定义关键词列表。
 

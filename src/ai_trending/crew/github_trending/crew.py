@@ -125,8 +125,10 @@ class GitHubTrendingOrchestrator:
     def _run_keyword_planning(self, query: str, current_date: str) -> list[str]:
         """Step 1：KeywordPlanningCrew 规划关键词，失败时使用兜底策略。"""
         try:
-            result = KeywordPlanningCrew().crew().kickoff(
-                inputs={"query": query, "current_date": current_date}
+            result = (
+                KeywordPlanningCrew()
+                .crew()
+                .kickoff(inputs={"query": query, "current_date": current_date})
             )
             plan = self._extract_pydantic_output(result, GitHubSearchPlan)
             if plan and plan.keywords:
@@ -149,17 +151,23 @@ class GitHubTrendingOrchestrator:
     ) -> GitHubTrendRanking | None:
         """Step 3：TrendRankingCrew 趋势分析与重排行。"""
         try:
-            result = TrendRankingCrew().crew().kickoff(
-                inputs={
-                    "query": query,
-                    "current_date": current_date,
-                    "requested_count": requested_count,
-                    "candidates_json": candidates_json,
-                }
+            result = (
+                TrendRankingCrew()
+                .crew()
+                .kickoff(
+                    inputs={
+                        "query": query,
+                        "current_date": current_date,
+                        "requested_count": requested_count,
+                        "candidates_json": candidates_json,
+                    }
+                )
             )
             ranking = self._extract_pydantic_output(result, GitHubTrendRanking)
             if ranking:
-                log.info(f"CrewAI 趋势分析成功: 产出 {len(ranking.ranked_repos)} 个排序结果")
+                log.info(
+                    f"CrewAI 趋势分析成功: 产出 {len(ranking.ranked_repos)} 个排序结果"
+                )
                 return ranking
         except Exception as e:
             log.warning(f"CrewAI 趋势分析失败: {e}")
@@ -279,7 +287,8 @@ class GitHubTrendingOrchestrator:
         """
         try:
             from langchain_core.tools import StructuredTool
-            from pydantic import BaseModel, Field as PydanticField
+            from pydantic import BaseModel
+            from pydantic import Field as PydanticField
         except ImportError as e:
             raise ImportError(
                 "as_langgraph_tool() 需要 langchain-core，请执行: pip install langchain-core"
@@ -314,6 +323,7 @@ class GitHubTrendingOrchestrator:
 
 # ── 模块级工厂函数（推荐在 LangGraph 中使用）────────────────────
 
+
 def create_langgraph_tool():
     """创建并返回 GitHub 趋势发现的 LangGraph StructuredTool。
 
@@ -344,7 +354,9 @@ if __name__ == "__main__":
         description="GitHub 热门 AI 开源项目发现（独立 Agent 模式）"
     )
     parser.add_argument(
-        "--query", default="AI", help="搜索主题，例如 'AI'、'MCP'、'AI Agent'（默认: AI）"
+        "--query",
+        default="AI",
+        help="搜索主题，例如 'AI'、'MCP'、'AI Agent'（默认: AI）",
     )
     parser.add_argument(
         "--top-n", type=int, default=5, help="返回项目数量 3-5（默认: 5）"

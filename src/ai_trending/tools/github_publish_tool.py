@@ -1,9 +1,8 @@
 """GitHub Publish Tool — 将生成的报告推送到 GitHub 仓库."""
 
-import os
 import base64
+import os
 from datetime import datetime
-from typing import Type
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -41,7 +40,7 @@ class GitHubPublishTool(BaseTool):
         "需要设置 GITHUB_TRENDING_TOKEN 和 GITHUB_REPORT_REPO 环境变量。"
         "报告会保存到仓库的 reports/ 目录下。"
     )
-    args_schema: Type[BaseModel] = GitHubPublishInput
+    args_schema: type[BaseModel] = GitHubPublishInput
 
     def _run(
         self,
@@ -55,10 +54,18 @@ class GitHubPublishTool(BaseTool):
         repo = cfg.github.report_repo
 
         if not token:
-            return self._save_locally(content, filename, "未设置 GITHUB_TRENDING_TOKEN 环境变量，报告已保存到本地")
+            return self._save_locally(
+                content,
+                filename,
+                "未设置 GITHUB_TRENDING_TOKEN 环境变量，报告已保存到本地",
+            )
 
         if not repo:
-            return self._save_locally(content, filename, "未设置 GITHUB_REPORT_REPO 环境变量，报告已保存到本地")
+            return self._save_locally(
+                content,
+                filename,
+                "未设置 GITHUB_REPORT_REPO 环境变量，报告已保存到本地",
+            )
 
         today = datetime.now().strftime("%Y-%m-%d")
         if not filename:

@@ -1,10 +1,11 @@
 """通用重试与降级机制 — 生产环境必备的网络调用保护."""
 
-import time
 import functools
-from typing import TypeVar, Callable, Any
+import time
+from collections.abc import Callable
+from typing import Any, TypeVar
 
-import requests
+import requests  # type: ignore[import-untyped]
 
 from ai_trending.logger import get_logger
 
@@ -49,16 +50,14 @@ def retry_on_failure(
                 except retry_on as e:
                     last_exception = e
                     if attempt < max_retries:
-                        wait = backoff_base ** attempt
+                        wait = backoff_base**attempt
                         log.warning(
                             f"⚠️  {name} 第 {attempt}/{max_retries} 次失败: {e.__class__.__name__}: {e}. "
                             f"{wait:.0f}s 后重试..."
                         )
                         time.sleep(wait)
                     else:
-                        log.error(
-                            f"❌ {name} 全部 {max_retries} 次重试均失败: {e}"
-                        )
+                        log.error(f"❌ {name} 全部 {max_retries} 次重试均失败: {e}")
 
             if fallback is not None:
                 log.warning(f"🔄 {name} 使用降级返回值")
@@ -92,7 +91,9 @@ def safe_request(
             # 对于 429 (Rate Limit)，特殊处理
             if resp.status_code == 429:
                 if attempt >= max_retries:
-                    log.warning(f"⚠️  {name} 触发速率限制，已达最大重试次数({max_retries})，跳过")
+                    log.warning(
+                        f"⚠️  {name} 触发速率限制，已达最大重试次数({max_retries})，跳过"
+                    )
                     return None
                 retry_after = int(resp.headers.get("Retry-After", 60))
                 log.warning(f"⚠️  {name} 触发速率限制，等待 {retry_after}s...")
@@ -119,7 +120,7 @@ def safe_request(
             log.warning(f"⚠️  {name} 服务端错误(attempt {attempt}/{max_retries}): {e}")
 
         if attempt < max_retries:
-            wait = 2 ** attempt
+            wait = 2**attempt
             time.sleep(wait)
 
     log.error(f"❌ {name} 全部 {max_retries} 次请求均失败")

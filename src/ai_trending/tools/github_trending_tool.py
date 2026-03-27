@@ -10,13 +10,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Type
+from typing import Any
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from ai_trending.crew.github_trending import GitHubTrendingOrchestrator
-from ai_trending.crew.github_trending.utils import EXCLUDE_REPOS, is_excluded as _is_excluded
+from ai_trending.crew.github_trending.utils import EXCLUDE_REPOS
+from ai_trending.crew.github_trending.utils import is_excluded as _is_excluded
 from ai_trending.logger import get_logger
 
 log = get_logger("github_tool")
@@ -46,11 +47,13 @@ class GitHubTrendingTool(BaseTool):
         "通过 CrewAI 编排三个 Agent（关键词规划 → GitHub 搜索采集 → 趋势分析），"
         "发现最近最能代表 AI 发展趋势的 3-5 个 GitHub 开源项目。"
     )
-    args_schema: Type[BaseModel] = GitHubTrendingInput
+    args_schema: type[BaseModel] = GitHubTrendingInput
 
     def _run(self, query: str = "AI", top_n: int = 5) -> str:
         orchestrator = GitHubTrendingOrchestrator()
-        final_repos, summary, hot_signals, keywords = orchestrator.run(query=query, top_n=top_n)
+        final_repos, summary, hot_signals, keywords = orchestrator.run(
+            query=query, top_n=top_n
+        )
 
         if not final_repos:
             return (
@@ -92,11 +95,19 @@ class GitHubTrendingTool(BaseTool):
             created_at = (repo.get("created_at", "") or "")[:10]
             updated_at = (repo.get("updated_at", "") or "")[:10]
             topics = ", ".join(repo.get("topics", [])[:5]) or "无"
-            reason = analysis.get("reason", "基于近期活跃度、技术方向和社区信号综合入选")
+            reason = analysis.get(
+                "reason", "基于近期活跃度、技术方向和社区信号综合入选"
+            )
             trend_score = analysis.get("trend_score", repo.get("_final_score", 0.0))
-            innovation_score = analysis.get("innovation_score", repo.get("_final_score", 0.0))
-            execution_score = analysis.get("execution_score", repo.get("_final_score", 0.0))
-            ecosystem_score = analysis.get("ecosystem_score", repo.get("_final_score", 0.0))
+            innovation_score = analysis.get(
+                "innovation_score", repo.get("_final_score", 0.0)
+            )
+            execution_score = analysis.get(
+                "execution_score", repo.get("_final_score", 0.0)
+            )
+            ecosystem_score = analysis.get(
+                "ecosystem_score", repo.get("_final_score", 0.0)
+            )
 
             output += f"### {index}. {repo['full_name']} | ⭐ {stars:,} | {language}\n"
             output += f"**定位**: {description}\n"

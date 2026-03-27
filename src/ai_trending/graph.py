@@ -12,10 +12,10 @@
 
 from __future__ import annotations
 
-from typing import TypedDict, Annotated
 import operator
+from typing import Annotated, TypedDict
 
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
 
 from ai_trending.logger import get_logger
 
@@ -24,34 +24,39 @@ log = get_logger("graph")
 
 # ==================== 状态定义 ====================
 
+
 class TrendingState(TypedDict, total=False):
     """LangGraph 全局状态 — 在节点间流转的数据.
 
     每个节点读取需要的字段，写入自己负责的字段。
     """
+
     # --- 输入参数 ---
-    current_date: str                # 报告日期 (YYYY-MM-DD)
-    author_name: str                 # 作者名称
+    current_date: str  # 报告日期 (YYYY-MM-DD)
+    author_name: str  # 作者名称
 
     # --- 数据采集层输出 ---
-    github_data: str                 # GitHub 热门项目文本（由 collect_github 节点写入）
-    news_data: str                   # 行业新闻文本（由 collect_news 节点写入）
+    github_data: str  # GitHub 热门项目文本（由 collect_github 节点写入）
+    news_data: str  # 行业新闻文本（由 collect_news 节点写入）
 
     # --- 评分层输出 ---
-    scoring_result: str              # 结构化 JSON 评分（由 score_trends 节点写入）
+    scoring_result: str  # 结构化 JSON 评分（由 score_trends 节点写入）
 
     # --- 报告层输出 ---
-    report_content: str              # 最终 Markdown 报告（由 write_report 节点写入）
+    report_content: str  # 最终 Markdown 报告（由 write_report 节点写入）
 
     # --- 发布层输出 ---
-    publish_results: Annotated[list[str], operator.add]  # 发布结果列表（由 publish 节点追加）
+    publish_results: Annotated[
+        list[str], operator.add
+    ]  # 发布结果列表（由 publish 节点追加）
 
     # --- 可观测性 ---
-    token_usage: dict                # 累计 Token 用量
+    token_usage: dict  # 累计 Token 用量
     errors: Annotated[list[str], operator.add]  # 错误记录（追加模式）
 
 
 # ==================== 构建流程图 ====================
+
 
 def build_graph() -> StateGraph:
     """构建并返回 AI Trending 的 LangGraph 流程图.
@@ -62,9 +67,9 @@ def build_graph() -> StateGraph:
     from ai_trending.nodes import (
         collect_github_node,
         collect_news_node,
+        publish_node,
         score_trends_node,
         write_report_node,
-        publish_node,
     )
 
     graph = StateGraph(TrendingState)
@@ -89,7 +94,9 @@ def build_graph() -> StateGraph:
     graph.add_edge("write_report", "publish")
     graph.add_edge("publish", END)
 
-    log.info("LangGraph 流程图构建完成: START → [collect_github, collect_news] → score_trends → write_report → publish → END")
+    log.info(
+        "LangGraph 流程图构建完成: START → [collect_github, collect_news] → score_trends → write_report → publish → END"
+    )
 
     return graph.compile()
 

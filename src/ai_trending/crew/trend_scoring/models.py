@@ -8,10 +8,14 @@ from pydantic import BaseModel, Field
 class ScoredRepo(BaseModel):
     """单个 GitHub 仓库的评分结果。"""
 
-    repo: str = Field(description="GitHub 仓库全名，格式 owner/repo_name，必须与原始数据完全一致")
+    repo: str = Field(
+        description="GitHub 仓库全名，格式 owner/repo_name，必须与原始数据完全一致"
+    )
     name: str = Field(default="", description="项目显示名称")
     url: str = Field(default="", description="GitHub 完整 URL")
-    stars: int = Field(default=0, description="Star 数，从原始数据中读取，不得估算或虚构")
+    stars: int = Field(
+        default=0, description="Star 数，从原始数据中读取，不得估算或虚构"
+    )
     language: str = Field(default="", description="主要编程语言")
     is_ai: bool = Field(default=True, description="是否为 AI 相关项目")
     category: str = Field(
@@ -54,7 +58,9 @@ class ScoredNews(BaseModel):
         default="",
         description="新闻类别：大厂动态 / 技术突破 / 开源生态 / 投融资 / 行业观察 / 产品发布 / 政策监管",
     )
-    impact_score: float = Field(ge=0, le=10, default=5.0, description="行业影响力评分，0-10")
+    impact_score: float = Field(
+        ge=0, le=10, default=5.0, description="行业影响力评分，0-10"
+    )
     impact_reason: str = Field(
         default="",
         description="一句话说明行业影响，不超过 35 字，必须是判断句",

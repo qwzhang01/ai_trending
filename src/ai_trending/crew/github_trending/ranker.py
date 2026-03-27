@@ -107,7 +107,10 @@ class GitHubRanker:
         final_count = self._select_output_count(merged, requested_count)
         selected = merged[:final_count]
 
-        from ai_trending.crew.util.dedup_cache import DedupCache  # 延迟导入，避免循环依赖
+        from ai_trending.crew.util.dedup_cache import (
+            DedupCache,  # 延迟导入，避免循环依赖
+        )
+
         dedup = DedupCache("github_repos", keep_days=30)
         dedup.mark_seen([repo["full_name"] for repo in selected])
 
@@ -178,8 +181,6 @@ class GitHubRanker:
                     topic_counter[normalized] = topic_counter.get(normalized, 0) + 1
 
         if topic_counter:
-            sorted_topics = sorted(
-                topic_counter.items(), key=lambda x: (-x[1], x[0])
-            )
+            sorted_topics = sorted(topic_counter.items(), key=lambda x: (-x[1], x[0]))
             return [t for t, _ in sorted_topics[:5]]
         return []

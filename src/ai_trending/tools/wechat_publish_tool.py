@@ -16,9 +16,8 @@ import io
 import os
 import re
 from datetime import datetime
-from typing import Type
 
-import markdown
+import markdown  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -106,7 +105,7 @@ class WeChatPublishTool(BaseTool):
         "封面图通过 WECHAT_THUMB_MEDIA_ID（直接指定）或 WECHAT_THUMB_IMAGE_URL（自动上传）配置。"
         "未配置微信环境变量时，仅保存本地 HTML 文件。"
     )
-    args_schema: Type[BaseModel] = WeChatPublishInput
+    args_schema: type[BaseModel] = WeChatPublishInput
 
     def _run(
         self,
@@ -204,7 +203,9 @@ class WeChatPublishTool(BaseTool):
             )
 
         # 添加草稿
-        media_id = self._add_draft(access_token, title, author, digest, article_html, thumb_media_id)
+        media_id = self._add_draft(
+            access_token, title, author, digest, article_html, thumb_media_id
+        )
         if not media_id:
             return (
                 f"❌ 推送到微信草稿箱失败，请查看日志获取详细错误信息。\n"
@@ -240,7 +241,9 @@ class WeChatPublishTool(BaseTool):
 
         data = resp.json()
         if "errcode" in data and data["errcode"] != 0:
-            log.error(f"获取 access_token 失败: errcode={data.get('errcode')}, errmsg={data.get('errmsg')}")
+            log.error(
+                f"获取 access_token 失败: errcode={data.get('errcode')}, errmsg={data.get('errmsg')}"
+            )
             return ""
 
         token = data.get("access_token", "")
@@ -262,7 +265,9 @@ class WeChatPublishTool(BaseTool):
 
         image_url = os.environ.get("WECHAT_THUMB_IMAGE_URL", "").strip()
         if image_url:
-            log.info(f"WECHAT_THUMB_MEDIA_ID 未设置，尝试从 URL 上传封面图: {image_url[:60]}...")
+            log.info(
+                f"WECHAT_THUMB_MEDIA_ID 未设置，尝试从 URL 上传封面图: {image_url[:60]}..."
+            )
             uploaded_id = self._upload_thumb_from_url(access_token, image_url)
             if uploaded_id:
                 log.info(
@@ -308,7 +313,9 @@ class WeChatPublishTool(BaseTool):
 
         img_data = img_resp.content
         if len(img_data) > 10 * 1024 * 1024:
-            log.error(f"封面图文件过大: {len(img_data) / 1024 / 1024:.1f}MB，微信限制 10MB")
+            log.error(
+                f"封面图文件过大: {len(img_data) / 1024 / 1024:.1f}MB，微信限制 10MB"
+            )
             return ""
 
         # 根据 Content-Type 或 URL 后缀判断图片格式
@@ -419,12 +426,8 @@ class WeChatPublishTool(BaseTool):
             "font-size: 17px; font-weight: 700; color: #1a1a2e; margin: 32px 0 16px 0; "
             "padding: 8px 0 8px 14px; border-left: 4px solid #0f3460; letter-spacing: 0.5px;"
         ),
-        "h3": (
-            "font-size: 15px; font-weight: 700; color: #1a1a2e; margin: 0 0 6px 0;"
-        ),
-        "h4": (
-            "font-size: 14px; font-weight: 600; color: #555; margin: 16px 0 8px 0;"
-        ),
+        "h3": ("font-size: 15px; font-weight: 700; color: #1a1a2e; margin: 0 0 6px 0;"),
+        "h4": ("font-size: 14px; font-weight: 600; color: #555; margin: 16px 0 8px 0;"),
         "p": (
             "font-size: 14.5px; color: #444; margin: 10px 0; line-height: 1.8; text-align: justify;"
         ),
@@ -477,7 +480,9 @@ class WeChatPublishTool(BaseTool):
         # Step 0: 预处理 Markdown
         # 问题1：Markdown 中 "任意文字\n---" 会被解析为 h2（Setext 语法）
         # 解决：确保所有 --- 分隔线前面有空行
-        md_text = re.sub(r"([^\n])\n(---+)\s*$", r"\1\n\n\2", md_text, flags=re.MULTILINE)
+        md_text = re.sub(
+            r"([^\n])\n(---+)\s*$", r"\1\n\n\2", md_text, flags=re.MULTILINE
+        )
 
         # 问题2：**粗体标题** 行紧跟列表项时，nl2br 扩展会把换行转成 <br/>，
         # 导致列表被当成 <p> 段落内的纯文本，无法渲染为 <ul><li>

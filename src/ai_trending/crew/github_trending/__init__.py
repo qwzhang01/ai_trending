@@ -26,5 +26,5 @@ from ai_trending.crew.github_trending.crew import (
 
 __all__ = [
     "GitHubTrendingOrchestrator",
-    "create_langgraph_tool",    # LangGraph 推荐入口
+    "create_langgraph_tool",  # LangGraph 推荐入口
 ]

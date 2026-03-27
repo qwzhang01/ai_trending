@@ -1,14 +1,10 @@
 """tests/unit/crew/test_previous_report_tracker.py — PreviousReportTracker 单元测试。"""
 
-import json
-from datetime import date
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ai_trending.crew.report_writing.tracker import PreviousReportTracker, TrackedRepo
-
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +59,7 @@ def tracker(tmp_reports_dir):
 
 # ── _find_previous_report 测试 ─────────────────────────────────────────────────
 
+
 class TestFindPreviousReport:
     """测试 _find_previous_report 的文件查找逻辑。"""
 
@@ -116,6 +113,7 @@ class TestFindPreviousReport:
 
 # ── _parse_recommended_repos 测试 ─────────────────────────────────────────────
 
+
 class TestParseRecommendedRepos:
     """测试 _parse_recommended_repos 的解析逻辑。"""
 
@@ -152,12 +150,15 @@ class TestParseRecommendedRepos:
     def test_limits_to_max_repos(self, tracker, tmp_path):
         """最多返回 _MAX_TRACK_REPOS 个项目。"""
         from ai_trending.crew.report_writing.tracker import _MAX_TRACK_REPOS
+
         reports_dir = tmp_path / "reports"
         reports_dir.mkdir(exist_ok=True)
         # 创建超过限制数量的项目
         lines = []
         for i in range(_MAX_TRACK_REPOS + 3):
-            lines.append(f"### [owner/repo{i}](https://github.com/owner/repo{i}) ⭐ {1000 + i}")
+            lines.append(
+                f"### [owner/repo{i}](https://github.com/owner/repo{i}) ⭐ {1000 + i}"
+            )
         content = "\n".join(lines)
         (reports_dir / "2026-03-25.md").write_text(content, encoding="utf-8")
         tracker = PreviousReportTracker(reports_dir=reports_dir)
@@ -182,6 +183,7 @@ class TestParseRecommendedRepos:
 
 
 # ── _fetch_current_stars 测试 ──────────────────────────────────────────────────
+
 
 class TestFetchCurrentStars:
     """测试 _fetch_current_stars 的 GitHub API 调用逻辑。"""
@@ -241,6 +243,7 @@ class TestFetchCurrentStars:
 
 
 # ── _format_context 测试 ──────────────────────────────────────────────────────
+
 
 class TestFormatContext:
     """测试 _format_context 的格式化逻辑。"""
@@ -304,6 +307,7 @@ class TestFormatContext:
 
 # ── get_previous_report_context 集成测试 ──────────────────────────────────────
 
+
 class TestGetPreviousReportContext:
     """测试 get_previous_report_context 的完整流程。"""
 
@@ -338,7 +342,9 @@ class TestGetPreviousReportContext:
 
     def test_returns_empty_on_unexpected_exception(self, tracker):
         """意外异常时，应返回空字符串（不崩溃）。"""
-        with patch.object(tracker, "_find_previous_report", side_effect=Exception("意外错误")):
+        with patch.object(
+            tracker, "_find_previous_report", side_effect=Exception("意外错误")
+        ):
             context = tracker.get_previous_report_context("2026-03-26")
 
         assert context == ""

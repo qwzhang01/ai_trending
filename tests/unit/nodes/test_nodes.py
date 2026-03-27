@@ -1,43 +1,50 @@
 """tests/unit/nodes/test_nodes.py — LangGraph 节点单元测试。"""
 
 import json
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
-from ai_trending.nodes import (
-    collect_github_node,
-    collect_news_node,
-    score_trends_node,
-    write_report_node,
-    publish_node,
-)
+from ai_trending.crew.report_writing.models import ReportOutput
 from ai_trending.crew.trend_scoring.models import (
     DailySummary,
     TrendScoringOutput,
 )
-from ai_trending.crew.report_writing.models import ReportOutput
-
+from ai_trending.nodes import (
+    collect_github_node,
+    collect_news_node,
+    publish_node,
+    score_trends_node,
+    write_report_node,
+)
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
 SAMPLE_GITHUB_DATA = "## GitHub 热点\n1. owner/test-repo ⭐ 5000"
 SAMPLE_NEWS_DATA = "1. OpenAI 发布 GPT-5"
-SAMPLE_SCORING_RESULT = json.dumps({
-    "scored_repos": [{"repo": "owner/test-repo", "stars": 5000}],
-    "scored_news": [],
-    "daily_summary": {"top_trend": "LLM 推理优化", "hot_directions": [], "overall_sentiment": "积极"},
-})
+SAMPLE_SCORING_RESULT = json.dumps(
+    {
+        "scored_repos": [{"repo": "owner/test-repo", "stars": 5000}],
+        "scored_news": [],
+        "daily_summary": {
+            "top_trend": "LLM 推理优化",
+            "hot_directions": [],
+            "overall_sentiment": "积极",
+        },
+    }
+)
 SAMPLE_REPORT = "# 🤖 AI 日报 · 2025-01-01\n\n测试日报内容"
 
 
 # ── collect_github_node 测试 ───────────────────────────────────────────────────
+
 
 class TestCollectGithubNode:
     """测试 collect_github_node 的 State 更新行为。"""
 
     def test_returns_github_data_key(self):
         """节点应返回包含 github_data 键的字典。"""
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingTool") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingTool"
+        ) as mock_cls:
             mock_cls.return_value._run.return_value = SAMPLE_GITHUB_DATA
 
             state = {"current_date": "2025-01-01"}
@@ -47,7 +54,9 @@ class TestCollectGithubNode:
 
     def test_tool_failure_records_error(self):
         """GitHubTrendingTool 失败时，应记录错误到 errors 字段，不崩溃。"""
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingTool") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingTool"
+        ) as mock_cls:
             mock_cls.return_value._run.side_effect = Exception("GitHub API 超时")
 
             state = {"current_date": "2025-01-01"}
@@ -59,7 +68,9 @@ class TestCollectGithubNode:
 
     def test_empty_tool_result_records_error(self):
         """GitHubTrendingTool 返回空字符串时，应记录错误。"""
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingTool") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingTool"
+        ) as mock_cls:
             mock_cls.return_value._run.return_value = ""
 
             state = {"current_date": "2025-01-01"}
@@ -69,7 +80,9 @@ class TestCollectGithubNode:
 
     def test_result_is_dict(self):
         """节点返回值必须是字典。"""
-        with patch("ai_trending.tools.github_trending_tool.GitHubTrendingTool") as mock_cls:
+        with patch(
+            "ai_trending.tools.github_trending_tool.GitHubTrendingTool"
+        ) as mock_cls:
             mock_cls.return_value._run.return_value = SAMPLE_GITHUB_DATA
 
             result = collect_github_node({"current_date": "2025-01-01"})
@@ -77,6 +90,7 @@ class TestCollectGithubNode:
 
 
 # ── collect_news_node 测试 ─────────────────────────────────────────────────────
+
 
 class TestCollectNewsNode:
     """测试 collect_news_node 的 State 更新行为。"""
@@ -114,6 +128,7 @@ class TestCollectNewsNode:
 
 
 # ── score_trends_node 测试 ─────────────────────────────────────────────────────
+
 
 class TestScoreTrendsNode:
     """测试 score_trends_node 的 State 更新行为（验证已改为调用 TrendScoringCrew）。"""
@@ -201,6 +216,7 @@ class TestScoreTrendsNode:
 
 # ── write_report_node 测试 ─────────────────────────────────────────────────────
 
+
 class TestWriteReportNode:
     """测试 write_report_node 的 State 更新行为。"""
 
@@ -208,7 +224,12 @@ class TestWriteReportNode:
         """节点应返回包含 report_content 键的字典。"""
         monkeypatch.chdir(tmp_path)
         fake_output = ReportOutput(content=SAMPLE_REPORT, validation_issues=[])
-        fake_token_usage = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2, "successful_requests": 1}
+        fake_token_usage = {
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "total_tokens": 2,
+            "successful_requests": 1,
+        }
 
         with patch("ai_trending.crew.report_writing.ReportWritingCrew") as mock_cls:
             mock_cls.return_value.run.return_value = (fake_output, fake_token_usage)
@@ -231,7 +252,12 @@ class TestWriteReportNode:
             content=SAMPLE_REPORT,
             validation_issues=["缺少必要 Section：## 趋势洞察"],
         )
-        fake_token_usage = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2, "successful_requests": 1}
+        fake_token_usage = {
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "total_tokens": 2,
+            "successful_requests": 1,
+        }
 
         with patch("ai_trending.crew.report_writing.ReportWritingCrew") as mock_cls:
             mock_cls.return_value.run.return_value = (fake_output, fake_token_usage)
@@ -270,6 +296,7 @@ class TestWriteReportNode:
 
 # ── publish_node 测试 ──────────────────────────────────────────────────────────
 
+
 class TestPublishNode:
     """测试 publish_node 的发布行为。"""
 
@@ -283,10 +310,14 @@ class TestPublishNode:
 
     def test_github_publish_failure_does_not_stop_wechat(self):
         """GitHub 发布失败时，微信发布应继续执行（独立容错）。"""
-        with patch("ai_trending.tools.github_publish_tool.GitHubPublishTool") as mock_gh:
+        with patch(
+            "ai_trending.tools.github_publish_tool.GitHubPublishTool"
+        ) as mock_gh:
             mock_gh.return_value._run.side_effect = Exception("GitHub API 失败")
 
-            with patch("ai_trending.tools.wechat_publish_tool.WeChatPublishTool") as mock_wx:
+            with patch(
+                "ai_trending.tools.wechat_publish_tool.WeChatPublishTool"
+            ) as mock_wx:
                 mock_wx.return_value._run.return_value = "✅ 微信草稿创建成功"
 
                 state = {
@@ -302,9 +333,13 @@ class TestPublishNode:
 
     def test_publish_results_is_list(self):
         """publish_results 应是列表类型。"""
-        with patch("ai_trending.tools.github_publish_tool.GitHubPublishTool") as mock_gh:
+        with patch(
+            "ai_trending.tools.github_publish_tool.GitHubPublishTool"
+        ) as mock_gh:
             mock_gh.return_value._run.return_value = "✅ 发布成功"
-            with patch("ai_trending.tools.wechat_publish_tool.WeChatPublishTool") as mock_wx:
+            with patch(
+                "ai_trending.tools.wechat_publish_tool.WeChatPublishTool"
+            ) as mock_wx:
                 mock_wx.return_value._run.return_value = "✅ 草稿创建成功"
 
                 state = {
@@ -318,9 +353,13 @@ class TestPublishNode:
     def test_result_is_dict(self):
         """节点返回值必须是字典。"""
         state = {"report_content": SAMPLE_REPORT, "current_date": "2025-01-01"}
-        with patch("ai_trending.tools.github_publish_tool.GitHubPublishTool") as mock_gh:
+        with patch(
+            "ai_trending.tools.github_publish_tool.GitHubPublishTool"
+        ) as mock_gh:
             mock_gh.return_value._run.return_value = "✅ 成功"
-            with patch("ai_trending.tools.wechat_publish_tool.WeChatPublishTool") as mock_wx:
+            with patch(
+                "ai_trending.tools.wechat_publish_tool.WeChatPublishTool"
+            ) as mock_wx:
                 mock_wx.return_value._run.return_value = "✅ 成功"
                 result = publish_node(state)
                 assert isinstance(result, dict)

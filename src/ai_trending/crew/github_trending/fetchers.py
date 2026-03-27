@@ -59,7 +59,10 @@ class GitHubFetcher:
         repos_raw = self._call_github_api(search_queries, query)
         total_found = len(repos_raw)
 
-        from ai_trending.crew.util.dedup_cache import DedupCache  # 延迟导入，避免循环依赖
+        from ai_trending.crew.util.dedup_cache import (
+            DedupCache,  # 延迟导入，避免循环依赖
+        )
+
         dedup = DedupCache("github_repos", keep_days=30)
         deduped = dedup.filter_new(repos_raw, key_fn=lambda r: r["full_name"])
         log.info(f"GitHub 去重缓存统计: {dedup.stats()}")
@@ -179,7 +182,9 @@ class GitHubFetcher:
 
             remaining = int(response.headers.get("X-RateLimit-Remaining", 99))
             if remaining <= 1:
-                log.warning("GitHub API 速率限制即将耗尽，建议配置 GITHUB_TRENDING_TOKEN")
+                log.warning(
+                    "GitHub API 速率限制即将耗尽，建议配置 GITHUB_TRENDING_TOKEN"
+                )
 
             try:
                 payload = response.json()

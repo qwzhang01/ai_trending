@@ -38,12 +38,13 @@ _MAX_LOOKBACK_DAYS = 14
 
 class TrackedRepo(NamedTuple):
     """单个被追踪项目的数据。"""
-    repo: str           # owner/repo_name
-    name: str           # 显示名称
-    prev_stars: int     # 上期 Star 数
-    curr_stars: int     # 当前 Star 数
-    growth: int         # 增长量
-    report_date: str    # 上期报告日期
+
+    repo: str  # owner/repo_name
+    name: str  # 显示名称
+    prev_stars: int  # 上期 Star 数
+    curr_stars: int  # 当前 Star 数
+    growth: int  # 增长量
+    report_date: str  # 上期报告日期
 
 
 class PreviousReportTracker:
@@ -92,7 +93,9 @@ class PreviousReportTracker:
                 log.info("[PreviousReportTracker] 上期报告中未找到可追踪的项目")
                 return ""
 
-            log.info(f"[PreviousReportTracker] 解析到 {len(repos)} 个项目: {[r[0] for r in repos]}")
+            log.info(
+                f"[PreviousReportTracker] 解析到 {len(repos)} 个项目: {[r[0] for r in repos]}"
+            )
 
             # 3. 查询当前 Star 数
             tracked = self._fetch_current_stars(repos, prev_date)
@@ -102,7 +105,9 @@ class PreviousReportTracker:
 
             # 4. 生成上下文字符串
             context = self._format_context(tracked, prev_date)
-            log.info(f"[PreviousReportTracker] 生成上期回顾上下文，追踪 {len(tracked)} 个项目")
+            log.info(
+                f"[PreviousReportTracker] 生成上期回顾上下文，追踪 {len(tracked)} 个项目"
+            )
             return context
 
         except Exception as e:
@@ -111,16 +116,16 @@ class PreviousReportTracker:
 
     # ── 内部方法 ──────────────────────────────────────────────────────────────
 
-    def _find_previous_report(
-        self, current_date: str
-    ) -> tuple[Path | None, str]:
+    def _find_previous_report(self, current_date: str) -> tuple[Path | None, str]:
         """在 reports/ 目录中找到最近一期报告（不含当天）。
 
         Returns:
             (报告文件路径, 报告日期字符串)，未找到时返回 (None, "")
         """
         if not self._reports_dir.exists():
-            log.warning(f"[PreviousReportTracker] reports 目录不存在: {self._reports_dir}")
+            log.warning(
+                f"[PreviousReportTracker] reports 目录不存在: {self._reports_dir}"
+            )
             return None, ""
 
         try:
@@ -138,9 +143,7 @@ class PreviousReportTracker:
 
         return None, ""
 
-    def _parse_recommended_repos(
-        self, report_path: Path
-    ) -> list[tuple[str, str, int]]:
+    def _parse_recommended_repos(self, report_path: Path) -> list[tuple[str, str, int]]:
         """从报告文件中解析推荐的 GitHub 项目。
 
         Returns:
@@ -232,14 +235,16 @@ class PreviousReportTracker:
                 curr_stars = int(data.get("stargazers_count", 0))
                 growth = curr_stars - prev_stars
 
-                tracked.append(TrackedRepo(
-                    repo=repo_full,
-                    name=display_name,
-                    prev_stars=prev_stars,
-                    curr_stars=curr_stars,
-                    growth=growth,
-                    report_date=prev_date,
-                ))
+                tracked.append(
+                    TrackedRepo(
+                        repo=repo_full,
+                        name=display_name,
+                        prev_stars=prev_stars,
+                        curr_stars=curr_stars,
+                        growth=growth,
+                        report_date=prev_date,
+                    )
+                )
                 log.info(
                     f"[PreviousReportTracker] {repo_full}: "
                     f"{prev_stars} → {curr_stars} (+{growth})"
@@ -285,21 +290,25 @@ class PreviousReportTracker:
             else:
                 trend_hint = "星数下降，需重新评估"
 
-            lines.extend([
-                f"- **{repo.name}** (`{repo.repo}`)",
-                f"  - 上期星数：⭐ {repo.prev_stars:,}",
-                f"  - 当前星数：⭐ {repo.curr_stars:,}",
-                f"  - 增长：{growth_sign}{repo.growth:,}（{growth_sign}{growth_pct}）",
-                f"  - 趋势参考：{trend_hint}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"- **{repo.name}** (`{repo.repo}`)",
+                    f"  - 上期星数：⭐ {repo.prev_stars:,}",
+                    f"  - 当前星数：⭐ {repo.curr_stars:,}",
+                    f"  - 增长：{growth_sign}{repo.growth:,}（{growth_sign}{growth_pct}）",
+                    f"  - 趋势参考：{trend_hint}",
+                    "",
+                ]
+            )
 
-        lines.extend([
-            "### 撰写指引",
-            "- 「星数追踪」部分：直接使用上方数字，格式为「⭐ {上期星数} → ⭐ {当前星数}（+{增长数}）」",
-            "- 「趋势验证」部分：基于增长量和趋势参考，诚实评估判断是否准确",
-            "- 「下周关注点」部分：制造连续性阅读钩子，引导读者下期继续关注",
-            "- 如果某个项目增长低于预期，必须如实写出，不要美化",
-        ])
+        lines.extend(
+            [
+                "### 撰写指引",
+                "- 「星数追踪」部分：直接使用上方数字，格式为「⭐ {上期星数} → ⭐ {当前星数}（+{增长数}）」",
+                "- 「趋势验证」部分：基于增长量和趋势参考，诚实评估判断是否准确",
+                "- 「下周关注点」部分：制造连续性阅读钩子，引导读者下期继续关注",
+                "- 如果某个项目增长低于预期，必须如实写出，不要美化",
+            ]
+        )
 
         return "\n".join(lines)

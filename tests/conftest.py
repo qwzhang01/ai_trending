@@ -1,15 +1,11 @@
 """pytest 公共 fixtures — 供所有测试文件复用."""
 
-import json
-import os
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-
 # ── 环境变量 fixtures ────────────────────────────────────────────
+
 
 @pytest.fixture
 def github_env(monkeypatch):
@@ -34,6 +30,7 @@ def newsdata_env(monkeypatch):
 
 # ── 临时目录 fixture ─────────────────────────────────────────────
 
+
 @pytest.fixture
 def tmp_output_dir(tmp_path, monkeypatch):
     """将工作目录切换到临时目录，避免测试污染真实 output/."""
@@ -42,6 +39,7 @@ def tmp_output_dir(tmp_path, monkeypatch):
 
 
 # ── 通用 HTTP mock fixture ───────────────────────────────────────
+
 
 def make_mock_response(json_data=None, text="", status_code=200):
     """构造一个模拟的 requests.Response 对象."""

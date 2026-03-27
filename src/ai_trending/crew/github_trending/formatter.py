@@ -57,7 +57,9 @@ def format_text_output(
         topics = ", ".join(repo.get("topics", [])[:5]) or "无"
         reason = analysis.get("reason", "基于近期活跃度、技术方向和社区信号综合入选")
         trend_score = analysis.get("trend_score", repo.get("_final_score", 0.0))
-        innovation_score = analysis.get("innovation_score", repo.get("_final_score", 0.0))
+        innovation_score = analysis.get(
+            "innovation_score", repo.get("_final_score", 0.0)
+        )
         execution_score = analysis.get("execution_score", repo.get("_final_score", 0.0))
         ecosystem_score = analysis.get("ecosystem_score", repo.get("_final_score", 0.0))
 

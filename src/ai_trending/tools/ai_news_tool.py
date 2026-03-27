@@ -6,8 +6,6 @@
 同时继承 NewsFetcher，以便测试可以直接测试抓取方法。
 """
 
-from typing import Type
-
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -44,7 +42,7 @@ class AINewsTool(BaseTool, NewsFetcher):
         "并由 AI 分析师 Agent 筛选出最有价值的内容。"
         "返回新闻标题、摘要、来源和链接。"
     )
-    args_schema: Type[BaseModel] = AINewsInput
+    args_schema: type[BaseModel] = AINewsInput
 
     def _run(self, keywords: str = "AI,LLM,AI Agent", top_n: int = 10) -> str:
         """触发 NewsCollectCrew，返回格式化的新闻摘要."""

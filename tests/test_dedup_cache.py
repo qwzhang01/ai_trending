@@ -2,9 +2,6 @@
 
 import json
 from datetime import datetime, timedelta
-from pathlib import Path
-
-import pytest
 
 from ai_trending.crew.util.dedup_cache import (
     KEEP_DAYS,
@@ -14,8 +11,8 @@ from ai_trending.crew.util.dedup_cache import (
     make_news_key,
 )
 
-
 # ── _url_key ─────────────────────────────────────────────────────
+
 
 class TestUrlKey:
     def test_same_url_same_key(self):
@@ -28,7 +25,9 @@ class TestUrlKey:
         assert _url_key("HTTPS://EXAMPLE.COM/A") == _url_key("https://example.com/a")
 
     def test_strips_whitespace(self):
-        assert _url_key("  https://example.com/a  ") == _url_key("https://example.com/a")
+        assert _url_key("  https://example.com/a  ") == _url_key(
+            "https://example.com/a"
+        )
 
     def test_key_length_16(self):
         key = _url_key("https://example.com")
@@ -36,6 +35,7 @@ class TestUrlKey:
 
 
 # ── make_news_key ─────────────────────────────────────────────────
+
 
 class TestMakeNewsKey:
     def test_url_takes_priority(self):
@@ -60,6 +60,7 @@ class TestMakeNewsKey:
 
 
 # ── _expire ───────────────────────────────────────────────────────
+
 
 class TestExpire:
     def test_removes_old_entries(self):
@@ -90,6 +91,7 @@ class TestExpire:
 
 
 # ── DedupCache ────────────────────────────────────────────────────
+
 
 class TestDedupCache:
     def test_is_new_returns_true_for_unseen(self, tmp_output_dir):
@@ -153,8 +155,8 @@ class TestDedupCache:
         )
 
         cache = DedupCache("expire_test")
-        assert cache.is_new("old_key") is True   # 过期，视为新
-        assert cache.is_new("new_key") is False   # 未过期，视为旧
+        assert cache.is_new("old_key") is True  # 过期，视为新
+        assert cache.is_new("new_key") is False  # 未过期，视为旧
 
     def test_corrupted_cache_file_resets(self, tmp_output_dir):
         """缓存文件损坏时，应优雅降级为空缓存."""

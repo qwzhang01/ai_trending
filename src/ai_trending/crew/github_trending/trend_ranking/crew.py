@@ -8,7 +8,6 @@ from __future__ import annotations
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
-from ai_trending.crew.github_trending.models import GitHubTrendRanking
 from ai_trending.llm_client import build_crewai_llm
 
 

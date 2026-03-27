@@ -38,7 +38,7 @@ _FALLBACK_OUTPUT = TrendScoringOutput(
 )
 
 
-def _extract_token_usage(crew_output) -> dict[str, int]:
+def _extract_token_usage(crew_output: object) -> dict[str, int]:
     """从 CrewOutput 中提取 token 用量，返回标准化字典。
 
     CrewAI 的 CrewOutput.token_usage 是 UsageMetrics 对象，
@@ -164,7 +164,9 @@ class TrendScoringCrew:
                 raw = result.raw or ""
                 output = self._parse_from_raw(raw)
                 if output is None:
-                    log.warning("[TrendScoringCrew] 未获取到 Pydantic 输出，使用兜底空结果")
+                    log.warning(
+                        "[TrendScoringCrew] 未获取到 Pydantic 输出，使用兜底空结果"
+                    )
                     return _FALLBACK_OUTPUT, token_usage
 
             log.info(

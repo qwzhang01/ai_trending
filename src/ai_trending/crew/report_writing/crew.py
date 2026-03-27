@@ -30,8 +30,8 @@ from crewai.project import CrewBase, agent, crew, task
 from ai_trending.llm_client import build_crewai_llm
 from ai_trending.logger import get_logger
 
-from .models import ReportOutput
 from ..trend_scoring.crew import _extract_token_usage
+from .models import ReportOutput
 
 log = get_logger("report_writing_crew")
 
@@ -47,7 +47,7 @@ _REQUIRED_SECTIONS = [
 # 新闻可信度标签（必须使用）
 _NEWS_CREDIBILITY_LABELS = [
     "🟢 一手信源",
-    "🟡 社区讨论", 
+    "🟡 社区讨论",
     "🔴 待验证",
 ]
 
@@ -61,17 +61,33 @@ _SIGNAL_STRENGTH_LABELS = [
 # 禁用词列表（与 tasks.yaml 约束保持一致）
 _BANNED_WORDS = [
     # 情绪化渲染词
-    "重磅", "震撼", "颠覆", "革命性", "划时代",
-    "里程碑", "历史性", "强烈推荐", "必看", "不容错过",
-    "太强了", "绝了", "牛逼", "未来已来", "新时代",
+    "重磅",
+    "震撼",
+    "颠覆",
+    "革命性",
+    "划时代",
+    "里程碑",
+    "历史性",
+    "强烈推荐",
+    "必看",
+    "不容错过",
+    "太强了",
+    "绝了",
+    "牛逼",
+    "未来已来",
+    "新时代",
     # 感叹号
-    "！", "!",
+    "！",
+    "!",
     # tasks.yaml 明确禁止的套话（每期最多用1次的句式不在此列）
-    "重新定义", "拓展新边界", "具有重要意义",
+    "重新定义",
+    "拓展新边界",
+    "具有重要意义",
     # 禁止的比喻句式
     "相当于",
     # 禁止的自创评分
-    "综合评分", "趋势代表性满分",
+    "综合评分",
+    "趋势代表性满分",
     # 禁止的同义反复
     "因为需求大所以增长快",
 ]
@@ -79,18 +95,31 @@ _BANNED_WORDS = [
 # 叙事风格关键词（至少包含其中一个，验证叙事性写作风格）
 # 注：移除「现在」「相当于」等过宽泛或已被禁止的词
 _NARRATIVE_KEYWORDS = [
-    "一个月前", "实测",
-    "值得关注如果你", "值得注意的是", "真正的信号在于",
-    "信息差", "谁应该关注",
-    "增速是", "发布仅", "星数突破",
-    "如果你在做", "痛点", "对比",
+    "一个月前",
+    "实测",
+    "值得关注如果你",
+    "值得注意的是",
+    "真正的信号在于",
+    "信息差",
+    "谁应该关注",
+    "增速是",
+    "发布仅",
+    "星数突破",
+    "如果你在做",
+    "痛点",
+    "对比",
 ]
 
 # So What 分析关键词（必须包含）
 _SO_WHAT_KEYWORDS = [
     "So What",  # 英文格式（实际输出中常用）
-    "所以呢", "实质是什么", "对谁有影响", "时间窗口",
-    "值得注意的是", "真正的信号在于", "这意味着",
+    "所以呢",
+    "实质是什么",
+    "对谁有影响",
+    "时间窗口",
+    "值得注意的是",
+    "真正的信号在于",
+    "这意味着",
 ]
 
 
@@ -114,7 +143,9 @@ def _validate_report(content: str) -> list[str]:
             signal_found = True
             break
     if not signal_found:
-        issues.append("缺少今日信号强度标签（三选一：🔴 重大变化日 / 🟡 常规更新日 / 🟢 平静日）")
+        issues.append(
+            "缺少今日信号强度标签（三选一：🔴 重大变化日 / 🟡 常规更新日 / 🟢 平静日）"
+        )
 
     # 3. 新闻可信度标签检查
     credibility_found = False
@@ -123,7 +154,9 @@ def _validate_report(content: str) -> list[str]:
             credibility_found = True
             break
     if not credibility_found:
-        issues.append("新闻条目缺少可信度标签（必须使用：🟢 一手信源 / 🟡 社区讨论 / 🔴 待验证）")
+        issues.append(
+            "新闻条目缺少可信度标签（必须使用：🟢 一手信源 / 🟡 社区讨论 / 🔴 待验证）"
+        )
 
     # 4. 今日一句话检查（必须包含「今日一句话」标记）
     if "**[今日一句话]**" not in content:
@@ -139,21 +172,25 @@ def _validate_report(content: str) -> list[str]:
             so_what_found = True
             break
     if not so_what_found:
-        issues.append("新闻条目缺少 So What 分析（必须回答：实质是什么、对谁有影响、时间窗口多长）")
+        issues.append(
+            "新闻条目缺少 So What 分析（必须回答：实质是什么、对谁有影响、时间窗口多长）"
+        )
 
     # 7. 本周行动建议检查（兼容多种格式）
     has_action = (
-        "**[本周作业]**" in content or
-        "**[讨论问题]**" in content or
-        "本周作业" in content or
-        "讨论问题" in content
+        "**[本周作业]**" in content
+        or "**[讨论问题]**" in content
+        or "本周作业" in content
+        or "讨论问题" in content
     )
     if not has_action:
         issues.append("缺少本周行动建议（必须包含至少一项可落地的任务或讨论问题）")
 
     # 8. 星数上下文检查（必须包含本周增长信息）
     if "（+" not in content and "本周增长" not in content:
-        issues.append("GitHub 项目星数缺少本周增长信息（格式：⭐ [star数]（+[本周增长]））")
+        issues.append(
+            "GitHub 项目星数缺少本周增长信息（格式：⭐ [star数]（+[本周增长]））"
+        )
 
     # 9. 头条机制检查（必须有头条深度解读）
     if "## 今日头条" in content:
@@ -170,19 +207,30 @@ def _validate_report(content: str) -> list[str]:
     # 10. 趋势洞察数据支撑检查
     if "## 趋势洞察" in content:
         # 检查趋势洞察是否有数据或对比支撑
-        data_indicators = ["数据", "对比", "增长", "从", "相比", "同期", "明显快于", "显著高于"]
+        data_indicators = [
+            "数据",
+            "对比",
+            "增长",
+            "从",
+            "相比",
+            "同期",
+            "明显快于",
+            "显著高于",
+        ]
         has_data_support = any(indicator in content for indicator in data_indicators)
         if not has_data_support:
-            issues.append("趋势洞察缺少数据或对比支撑（必须包含具体数据、对比信息或增长趋势）")
+            issues.append(
+                "趋势洞察缺少数据或对比支撑（必须包含具体数据、对比信息或增长趋势）"
+            )
 
     # 11. 互动引导检查（兼容多种格式）
     has_interaction = (
-        "**[参与方式]**" in content or
-        "**[反馈与互动]**" in content or
-        "参与方式" in content or
-        "反馈与互动" in content or
-        "欢迎分享" in content or
-        "评论区" in content
+        "**[参与方式]**" in content
+        or "**[反馈与互动]**" in content
+        or "参与方式" in content
+        or "反馈与互动" in content
+        or "欢迎分享" in content
+        or "评论区" in content
     )
     if not has_interaction:
         issues.append("缺少互动引导（必须包含参与方式或反馈渠道）")
@@ -195,7 +243,9 @@ def _validate_report(content: str) -> list[str]:
     # 13. 叙事风格检查（必须包含叙事元素，验证非模板化写作）
     narrative_found = any(kw in content for kw in _NARRATIVE_KEYWORDS)
     if not narrative_found:
-        issues.append("内容缺少叙事风格元素（应包含信息差悬念、技术细节、对比锐点等，如：实测/增速是/发布仅/如果你在做）")
+        issues.append(
+            "内容缺少叙事风格元素（应包含信息差悬念、技术细节、对比锐点等，如：实测/增速是/发布仅/如果你在做）"
+        )
 
     # 14. 字数检查（与 tasks.yaml 约束一致：800-2000 字）
     char_count = len(content.replace(" ", "").replace("\n", ""))
@@ -210,21 +260,32 @@ def _validate_report(content: str) -> list[str]:
             issues.append(f"包含禁用词：「{word}」")
 
     # 16. emoji密度检查（每100字不超过3个emoji）
-    emoji_count = sum(1 for char in content if char in ["🔴", "🟡", "🟢", "🔥", "📰", "🧭", "💡", "📊", "📋", "💬"])
+    emoji_count = sum(
+        1
+        for char in content
+        if char in ["🔴", "🟡", "🟢", "🔥", "📰", "🧭", "💡", "📊", "📋", "💬"]
+    )
     if char_count > 0:
         emoji_density = emoji_count / (char_count / 100)
         if emoji_density > 3:
-            issues.append(f"emoji密度过高：{emoji_density:.1f}个/100字（建议不超过3个）")
+            issues.append(
+                f"emoji密度过高：{emoji_density:.1f}个/100字（建议不超过3个）"
+            )
 
     # 17. 行动建议时效性检查（对应 tasks.yaml 约束 13 条）
     if "本周作业" in content or "讨论问题" in content:
         if "时效理由" not in content and "为什么是这周" not in content:
-            issues.append("行动建议缺少时效性理由（建议包含「为什么是这周而不是下周」的理由）")
+            issues.append(
+                "行动建议缺少时效性理由（建议包含「为什么是这周而不是下周」的理由）"
+            )
 
     # 18. 禁止句式检查（tasks.yaml 约束 8/17 条：禁止「相当于……的……版」句式）
     import re as _re
+
     if _re.search(r"相当于.{1,20}的.{1,10}版", content):
-        issues.append("包含禁止句式：「相当于……的……版」（tasks.yaml 约束 8 条明确禁止）")
+        issues.append(
+            "包含禁止句式：「相当于……的……版」（tasks.yaml 约束 8 条明确禁止）"
+        )
 
     return issues
 
@@ -324,7 +385,8 @@ class ReportWritingCrew:
                     "news_data": news_data or "无可用数据",
                     "scoring_result": scoring_result or "{}",
                     "current_date": current_date,
-                    "previous_report_context": previous_report_context or "（无上期数据，请省略「上期回顾」Section）",
+                    "previous_report_context": previous_report_context
+                    or "（无上期数据，请省略「上期回顾」Section）",
                 }
             )
 
@@ -344,18 +406,24 @@ class ReportWritingCrew:
             if output is None or not output.content:
                 raw = result.raw or ""
                 output = ReportOutput(content=raw)
-                log.warning("[ReportWritingCrew] 未获取到 Pydantic 输出，使用 raw 文本兜底")
+                log.warning(
+                    "[ReportWritingCrew] 未获取到 Pydantic 输出，使用 raw 文本兜底"
+                )
 
             # 修正 Markdown 格式（补全标题前缺失的空行）
             fixed_content = _fix_markdown_spacing(output.content)
             if fixed_content != output.content:
                 log.info("[ReportWritingCrew] 已自动修正 Markdown 空行格式")
-                output = ReportOutput(content=fixed_content, validation_issues=output.validation_issues)
+                output = ReportOutput(
+                    content=fixed_content, validation_issues=output.validation_issues
+                )
 
             # 格式校验（不阻断，只记录问题）
             issues = _validate_report(output.content)
             if issues:
-                log.warning(f"[ReportWritingCrew] 格式校验发现 {len(issues)} 个问题: {issues}")
+                log.warning(
+                    f"[ReportWritingCrew] 格式校验发现 {len(issues)} 个问题: {issues}"
+                )
                 output = ReportOutput(content=output.content, validation_issues=issues)
 
             log.info(

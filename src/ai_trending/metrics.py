@@ -44,22 +44,22 @@ MODEL_PRICING: dict[str, tuple[float, float]] = {
     "llama": (0.10, 0.30),
     "deepseek": (0.14, 0.28),
     # Moonshot / Kimi (人民币换算，按 7.2 汇率折 USD)
-    "moonshot-v1-8k": (0.17, 0.17),    # ¥1.25/1M → ~$0.17
-    "moonshot-v1-32k": (0.42, 0.42),   # ¥3/1M → ~$0.42
+    "moonshot-v1-8k": (0.17, 0.17),  # ¥1.25/1M → ~$0.17
+    "moonshot-v1-32k": (0.42, 0.42),  # ¥3/1M → ~$0.42
     "moonshot-v1-128k": (0.83, 0.83),  # ¥6/1M → ~$0.83
-    "kimi-k2": (0.83, 2.78),           # ¥6/¥20 per 1M → ~$0.83/$2.78
+    "kimi-k2": (0.83, 2.78),  # ¥6/¥20 per 1M → ~$0.83/$2.78
     "kimi-latest": (0.83, 2.78),
-    "moonshot": (0.42, 0.42),          # 通用兜底，按 32k 档估算
+    "moonshot": (0.42, 0.42),  # 通用兜底，按 32k 档估算
     # 百川 / MiniMax / 智谱
     "baichuan": (0.14, 0.14),
     "minimax": (0.14, 0.42),
     "glm": (0.14, 0.14),
     # 字节 / 豆包
-    "doubao": (0.04, 0.04),            # 豆包 lite 极低价
+    "doubao": (0.04, 0.04),  # 豆包 lite 极低价
     # 阿里 / 通义（SiliconFlow 上的 Qwen 已覆盖，这里补官方 API）
-    "qwen-max": (0.56, 2.22),          # ¥4/¥16 per 1M
-    "qwen-plus": (0.06, 0.28),         # ¥0.4/¥2 per 1M
-    "qwen-turbo": (0.03, 0.06),        # ¥0.2/¥0.4 per 1M
+    "qwen-max": (0.56, 2.22),  # ¥4/¥16 per 1M
+    "qwen-plus": (0.06, 0.28),  # ¥0.4/¥2 per 1M
+    "qwen-turbo": (0.03, 0.06),  # ¥0.2/¥0.4 per 1M
 }
 
 
@@ -84,7 +84,9 @@ class ToolCallRecord:
         self.error: str | None = None
         self.extra: dict[str, Any] = {}
 
-    def finish(self, status: str = "success", error: str | None = None, **extra: Any):
+    def finish(
+        self, status: str = "success", error: str | None = None, **extra: Any
+    ) -> None:
         self.end_time = time.monotonic()
         self.status = status
         self.error = error
@@ -126,14 +128,16 @@ class RunMetrics:
         self.estimated_cost: float = 0.0
 
         # 最终状态
-        self.status: str = "pending"  # pending -> running -> success / failed / cancelled
+        self.status: str = (
+            "pending"  # pending -> running -> success / failed / cancelled
+        )
         self.error: str | None = None
 
-    def start(self):
+    def start(self) -> None:
         self.start_time = time.monotonic()
         self.status = "running"
 
-    def finish(self, status: str = "success", error: str | None = None):
+    def finish(self, status: str = "success", error: str | None = None) -> None:
         self.end_time = time.monotonic()
         self.status = status
         self.error = error
@@ -147,17 +151,21 @@ class RunMetrics:
 
     # ---------- 阶段追踪 ----------
 
-    def stage_start(self, name: str):
-        self.stages.append({
-            "name": name,
-            "start": time.monotonic(),
-            "end": None,
-            "status": "running",
-            "error": None,
-        })
+    def stage_start(self, name: str) -> None:
+        self.stages.append(
+            {
+                "name": name,
+                "start": time.monotonic(),
+                "end": None,
+                "status": "running",
+                "error": None,
+            }
+        )
         log.info(f"▶️  阶段开始: {name}")
 
-    def stage_end(self, name: str, status: str = "success", error: str | None = None):
+    def stage_end(
+        self, name: str, status: str = "success", error: str | None = None
+    ) -> None:
         for stage in reversed(self.stages):
             if stage["name"] == name and stage["status"] == "running":
                 stage["end"] = time.monotonic()
@@ -194,7 +202,9 @@ class RunMetrics:
             "stages": [
                 {
                     "name": s["name"],
-                    "elapsed_sec": round(s["end"] - s["start"], 2) if s["end"] and s["start"] else None,
+                    "elapsed_sec": round(s["end"] - s["start"], 2)
+                    if s["end"] and s["start"]
+                    else None,
                     "status": s["status"],
                     "error": s["error"],
                 }
@@ -211,10 +221,12 @@ class RunMetrics:
         log.info(f"📁 指标已保存: {filepath}")
         return filepath
 
-    def print_summary(self):
+    def print_summary(self) -> str:
         """在控制台输出彩色汇总报告."""
         d = self.to_dict()
-        status_icon = {"success": "✅", "failed": "❌", "cancelled": "⚠️"}.get(d["status"], "❓")
+        status_icon = {"success": "✅", "failed": "❌", "cancelled": "⚠️"}.get(
+            d["status"], "❓"
+        )
 
         lines = [
             "",
@@ -233,36 +245,46 @@ class RunMetrics:
         # Token 用量
         tu = d["token_usage"]
         if tu.get("total_tokens", 0) > 0:
-            lines.extend([
-                "║",
-                "║  ── Token 用量 ──────────────────────────────────",
-                f"║  模型:          {d['model']}",
-                f"║  Prompt:        {tu.get('prompt_tokens', 0):,} tokens",
-                f"║  Completion:    {tu.get('completion_tokens', 0):,} tokens",
-                f"║  合计:          {tu.get('total_tokens', 0):,} tokens",
-                f"║  请求数:        {tu.get('successful_requests', 0)}",
-                f"║  💰 预估费用:   ${d['estimated_cost_usd']:.4f}",
-            ])
+            lines.extend(
+                [
+                    "║",
+                    "║  ── Token 用量 ──────────────────────────────────",
+                    f"║  模型:          {d['model']}",
+                    f"║  Prompt:        {tu.get('prompt_tokens', 0):,} tokens",
+                    f"║  Completion:    {tu.get('completion_tokens', 0):,} tokens",
+                    f"║  合计:          {tu.get('total_tokens', 0):,} tokens",
+                    f"║  请求数:        {tu.get('successful_requests', 0)}",
+                    f"║  💰 预估费用:   ${d['estimated_cost_usd']:.4f}",
+                ]
+            )
 
         # 阶段耗时
         if d["stages"]:
-            lines.extend([
-                "║",
-                "║  ── 阶段耗时 ──────────────────────────────────",
-            ])
+            lines.extend(
+                [
+                    "║",
+                    "║  ── 阶段耗时 ──────────────────────────────────",
+                ]
+            )
             for s in d["stages"]:
                 icon = "✅" if s["status"] == "success" else "❌"
-                elapsed = f"{s['elapsed_sec']:.1f}s" if s["elapsed_sec"] is not None else "N/A"
+                elapsed = (
+                    f"{s['elapsed_sec']:.1f}s"
+                    if s["elapsed_sec"] is not None
+                    else "N/A"
+                )
                 lines.append(f"║  {icon} {s['name']:<20s}  {elapsed}")
                 if s["error"]:
                     lines.append(f"║     └─ {s['error'][:50]}")
 
         # Tool 调用
         if d["tool_calls"]:
-            lines.extend([
-                "║",
-                "║  ── Tool 调用 ──────────────────────────────────",
-            ])
+            lines.extend(
+                [
+                    "║",
+                    "║  ── Tool 调用 ──────────────────────────────────",
+                ]
+            )
             for tc in d["tool_calls"]:
                 icon = "✅" if tc["status"] == "success" else "❌"
                 lines.append(f"║  {icon} {tc['tool']:<24s}  {tc['elapsed_sec']:.1f}s")
@@ -277,7 +299,7 @@ class RunMetrics:
 
     # ---------- Webhook 通知 ----------
 
-    def send_webhook(self, force: bool = False):
+    def send_webhook(self, force: bool = False) -> None:
         """发送运行结果通知到 Webhook（仅在失败时或 force=True 时）.
 
         支持的环境变量:
@@ -294,9 +316,11 @@ class RunMetrics:
             return
 
         try:
-            import requests as req
+            import requests as req  # type: ignore[import-untyped]
 
-            status_icon = {"success": "✅", "failed": "❌", "cancelled": "⚠️"}.get(self.status, "❓")
+            status_icon = {"success": "✅", "failed": "❌", "cancelled": "⚠️"}.get(
+                self.status, "❓"
+            )
             tu = self.token_usage
             total_tokens = tu.get("total_tokens", 0)
 
@@ -308,14 +332,18 @@ class RunMetrics:
                 f"- 耗时: {self.total_elapsed:.1f}s",
             ]
             if total_tokens > 0:
-                text_parts.append(f"- Token: {total_tokens:,} (≈${self.estimated_cost:.4f})")
+                text_parts.append(
+                    f"- Token: {total_tokens:,} (≈${self.estimated_cost:.4f})"
+                )
             if self.error:
                 text_parts.append(f"- 错误: {self.error[:200]}")
 
             # Tool 调用摘要
             failed_tools = [tc for tc in self.tool_calls if tc.status == "failed"]
             if failed_tools:
-                text_parts.append(f"- 失败 Tool: {', '.join(tc.tool_name for tc in failed_tools)}")
+                text_parts.append(
+                    f"- 失败 Tool: {', '.join(tc.tool_name for tc in failed_tools)}"
+                )
 
             text = "\n".join(text_parts)
 
@@ -326,7 +354,9 @@ class RunMetrics:
             if resp.ok:
                 log.info("📨 Webhook 通知已发送")
             else:
-                log.warning(f"⚠️  Webhook 发送失败: {resp.status_code} {resp.text[:100]}")
+                log.warning(
+                    f"⚠️  Webhook 发送失败: {resp.status_code} {resp.text[:100]}"
+                )
 
         except Exception as e:
             log.warning(f"⚠️  Webhook 发送异常: {e}")
@@ -346,7 +376,9 @@ def _build_webhook_payload(url: str, text: str) -> dict:
             "msg_type": "interactive",
             "card": {
                 "elements": [{"tag": "markdown", "content": text}],
-                "header": {"title": {"tag": "plain_text", "content": "AI Trending 运行通知"}},
+                "header": {
+                    "title": {"tag": "plain_text", "content": "AI Trending 运行通知"}
+                },
             },
         }
     elif "hooks.slack.com" in url:

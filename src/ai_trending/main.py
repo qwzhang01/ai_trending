@@ -40,7 +40,7 @@ def run():
         print("\n...")
         return final_state
     except Exception as e:
-        raise Exception(f"运行 AI Trending 时出错: {e}")
+        raise Exception(f"运行 AI Trending 时出错: {e}") from e
 
 
 def run_with_trigger():
@@ -56,7 +56,7 @@ def run_with_trigger():
     try:
         trigger_payload = json.loads(sys.argv[1])
     except json.JSONDecodeError:
-        raise Exception("无效的 JSON payload")
+        raise Exception("无效的 JSON payload") from None
 
     from ai_trending.graph import get_graph
 
@@ -79,4 +79,4 @@ def run_with_trigger():
         final_state = graph.invoke(initial_state)
         return final_state
     except Exception as e:
-        raise Exception(f"通过触发器运行时出错: {e}")
+        raise Exception(f"通过触发器运行时出错: {e}") from e

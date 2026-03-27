@@ -19,12 +19,11 @@ from datetime import datetime
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 
+from ai_trending.crew.new_collect.fetchers import NewsFetcher
 from ai_trending.llm_client import build_crewai_llm
 from ai_trending.logger import get_logger
-from ai_trending.crew.new_collect.fetchers import NewsFetcher
 
 log = get_logger("news_crew")
-
 
 
 @CrewBase
@@ -108,7 +107,9 @@ class NewsCollectCrew:
             log.warning("[NewsCollectCrew] 所有新闻源均未返回数据")
             return "未能获取到最新的 AI 相关新闻。请检查网络连接。"
 
-        log.info(f"[NewsCollectCrew] 抓取完成: {' | '.join(source_stats)}，共 {len(news_list)} 条")
+        log.info(
+            f"[NewsCollectCrew] 抓取完成: {' | '.join(source_stats)}，共 {len(news_list)} 条"
+        )
 
         # Step 2: 将原始数据序列化为文本，供 Agent 筛选
         raw_data = self._format_raw_news(news_list)
@@ -116,10 +117,12 @@ class NewsCollectCrew:
 
         # Step 3: CrewAI Agent 筛选（通过 kickoff(inputs=) 注入动态数据）
         try:
-            result = self.crew().kickoff(inputs={
-                "raw_data": raw_data,
-                "current_date": current_date,
-            })
+            result = self.crew().kickoff(
+                inputs={
+                    "raw_data": raw_data,
+                    "current_date": current_date,
+                }
+            )
             output = str(result).strip()
             log.info(f"[NewsCollectCrew] 筛选完成，输出 {len(output)} 字符")
             return output

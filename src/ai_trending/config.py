@@ -14,7 +14,7 @@ class LLMConfig:
 
     model: str = "openai/gpt-4o"
     model_light: str = ""  # 轻量模型，留空则回退到 model
-    model_tool: str = ""   # 工具调用模型，留空则回退到 model_light
+    model_tool: str = ""  # 工具调用模型，留空则回退到 model_light
     api_key: str = ""
     api_base: str = ""
     temperature: float = 0.1  # 生产环境用低温度，减少幻觉
@@ -93,7 +93,7 @@ def load_config() -> AppConfig:
         llm=LLMConfig(
             model=os.getenv("MODEL", "openai/gpt-4o"),
             model_light=os.getenv("MODEL_LIGHT", "") or default_model,
-            model_tool= os.getenv("MODEL_TOOL", "") or light_model,
+            model_tool=os.getenv("MODEL_TOOL", "") or light_model,
             api_key=os.getenv("OPENAI_API_KEY", ""),
             api_base=os.getenv("OPENAI_API_BASE", ""),
             temperature=float(os.getenv("LLM_TEMPERATURE", "0.1")),
@@ -136,23 +136,31 @@ def validate_config(config: AppConfig) -> list[str]:
 
     # 推荐项
     if not config.github.token:
-        warnings.append("⚠️  [推荐] GITHUB_TRENDING_TOKEN 未设置，GitHub API 速率受限(60次/小时)，报告无法推送")
+        warnings.append(
+            "⚠️  [推荐] GITHUB_TRENDING_TOKEN 未设置，GitHub API 速率受限(60次/小时)，报告无法推送"
+        )
     elif not config.github.report_repo:
         warnings.append("⚠️  [可选] GITHUB_REPORT_REPO 未设置，报告将只保存到本地")
 
     if not config.news.has_newsdata:
-        warnings.append("⚠️  [可选] NEWSDATA_API_KEY 未设置，新闻源将只有 Hacker News + Reddit")
+        warnings.append(
+            "⚠️  [可选] NEWSDATA_API_KEY 未设置，新闻源将只有 Hacker News + Reddit"
+        )
 
     # 微信公众号（可选）
     if not config.wechat.is_enabled:
-        warnings.append("⚠️  [可选] WECHAT_APP_ID / WECHAT_APP_SECRET 未设置，将跳过微信草稿箱发布")
+        warnings.append(
+            "⚠️  [可选] WECHAT_APP_ID / WECHAT_APP_SECRET 未设置，将跳过微信草稿箱发布"
+        )
     elif not config.wechat.thumb_media_id:
-        warnings.append("ℹ️  [可选] WECHAT_THUMB_MEDIA_ID 未设置，将在运行时自动上传封面图")
+        warnings.append(
+            "ℹ️  [可选] WECHAT_THUMB_MEDIA_ID 未设置，将在运行时自动上传封面图"
+        )
 
     return warnings
 
 
-def print_startup_banner(config: AppConfig):
+def print_startup_banner(config: AppConfig) -> None:
     """打印启动信息面板."""
     from ai_trending.logger import get_logger
 
@@ -163,9 +171,15 @@ def print_startup_banner(config: AppConfig):
     log.info(f"  LLM 模型   : {config.llm.model}")
     log.info(f"  API Base   : {config.llm.api_base or '(默认)'}")
     log.info(f"  Temperature: {config.llm.temperature}")
-    log.info(f"  GitHub 推送 : {'✅ 已配置' if config.github.is_publish_ready else '❌ 未配置(本地保存)'}")
-    log.info(f"  Newsdata.io: {'✅ 已配置' if config.news.has_newsdata else '❌ 未配置'}")
-    log.info(f"  微信公众号 : {'✅ 已配置' if config.wechat.is_enabled else '❌ 未配置(跳过草稿箱)'}")
+    log.info(
+        f"  GitHub 推送 : {'✅ 已配置' if config.github.is_publish_ready else '❌ 未配置(本地保存)'}"
+    )
+    log.info(
+        f"  Newsdata.io: {'✅ 已配置' if config.news.has_newsdata else '❌ 未配置'}"
+    )
+    log.info(
+        f"  微信公众号 : {'✅ 已配置' if config.wechat.is_enabled else '❌ 未配置(跳过草稿箱)'}"
+    )
     log.info(f"  报告目录   : {config.reports_dir}")
     log.info(f"  输出目录   : {config.output_dir}")
     log.info("=" * 60)

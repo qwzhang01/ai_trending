@@ -21,9 +21,9 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
+from ai_trending.crew.util.dedup_cache import DedupCache, make_news_key
 from ai_trending.logger import get_logger
 from ai_trending.retry import safe_request
-from ai_trending.crew.util.dedup_cache import DedupCache, make_news_key
 
 log = get_logger("news_fetcher")
 
@@ -36,12 +36,36 @@ _BROWSER_UA = (
 
 # AI 相关关键词（中英文混合），用于知乎等中文源的过滤
 _AI_KEYWORDS_CN = [
-    "ai", "人工智能", "llm", "大模型", "大语言模型",
-    "gpt", "chatgpt", "agent", "智能体", "ai agent",
-    "机器学习", "深度学习", "神经网络", "openai", "claude",
-    "gemini", "copilot", "算力", "芯片", "transformer",
-    "manus", "deepseek", "通义", "文心", "豆包", "kimi",
-    "cursor", "midjourney", "sora", "生成式",
+    "ai",
+    "人工智能",
+    "llm",
+    "大模型",
+    "大语言模型",
+    "gpt",
+    "chatgpt",
+    "agent",
+    "智能体",
+    "ai agent",
+    "机器学习",
+    "深度学习",
+    "神经网络",
+    "openai",
+    "claude",
+    "gemini",
+    "copilot",
+    "算力",
+    "芯片",
+    "transformer",
+    "manus",
+    "deepseek",
+    "通义",
+    "文心",
+    "豆包",
+    "kimi",
+    "cursor",
+    "midjourney",
+    "sora",
+    "生成式",
 ]
 
 
@@ -62,9 +86,7 @@ class NewsFetcher:
         Returns:
             (news_list, source_stats) — news_list 已按 score 降序排列并完成跨日去重
         """
-        all_news, source_stats = asyncio.run(
-            self._fetch_all_async(keywords, top_n)
-        )
+        all_news, source_stats = asyncio.run(self._fetch_all_async(keywords, top_n))
 
         log.info(f"新闻抓取完成 — {' | '.join(source_stats)}")
 
@@ -89,10 +111,9 @@ class NewsFetcher:
             unique_news,
             key_fn=lambda n: make_news_key(n.get("url", ""), n.get("title", "")),
         )
-        dedup.mark_seen([
-            make_news_key(n.get("url", ""), n.get("title", ""))
-            for n in new_news
-        ])
+        dedup.mark_seen(
+            [make_news_key(n.get("url", ""), n.get("title", "")) for n in new_news]
+        )
         log.info(f"跨日去重缓存统计: {dedup.stats()}")
 
         # 全部重复时降级返回全量，避免空结果
@@ -127,7 +148,11 @@ class NewsFetcher:
             )
             fut_newsdata = (
                 loop.run_in_executor(
-                    executor, self._fetch_newsdata, keyword_list, top_n, newsdata_api_key
+                    executor,
+                    self._fetch_newsdata,
+                    keyword_list,
+                    top_n,
+                    newsdata_api_key,
                 )
                 if newsdata_api_key
                 else asyncio.sleep(0, result=[])
@@ -137,7 +162,10 @@ class NewsFetcher:
             )
 
             results = await asyncio.gather(
-                fut_hn, fut_reddit, fut_newsdata, fut_zhihu,
+                fut_hn,
+                fut_reddit,
+                fut_newsdata,
+                fut_zhihu,
                 return_exceptions=True,
             )
 
@@ -146,7 +174,7 @@ class NewsFetcher:
         all_news: list[dict] = []
         source_stats: list[str] = []
 
-        for label, result in zip(labels, results):
+        for label, result in zip(labels, results, strict=False):
             if isinstance(result, BaseException):
                 log.warning(f"{label} 抓取异常: {result}")
                 source_stats.append(f"{label}: 失败")
@@ -384,10 +412,11 @@ class NewsFetcher:
     # ------------------------------------------------------------------
     def _fetch_zhihu_hot(self, keywords: list[str], limit: int) -> list[dict]:
         """从知乎获取 AI / LLM / Agent 相关热门内容."""
-        all_keywords = list(set(
-            [kw.lower() for kw in _AI_KEYWORDS_CN]
-            + [kw.lower() for kw in keywords]
-        ))
+        all_keywords = list(
+            set(
+                [kw.lower() for kw in _AI_KEYWORDS_CN] + [kw.lower() for kw in keywords]
+            )
+        )
 
         zhihu_cookie = os.environ.get("ZHIHU_COOKIE", "")
         if zhihu_cookie:
@@ -440,7 +469,9 @@ class NewsFetcher:
 
         for item in data.get("data", []):
             target = item.get("target", {})
-            title = target.get("title", "") or target.get("title_area", {}).get("text", "")
+            title = target.get("title", "") or target.get("title_area", {}).get(
+                "text", ""
+            )
             if not title:
                 card = item.get("card_content", {})
                 title = card.get("title", "")
@@ -451,7 +482,9 @@ class NewsFetcher:
             if not any(kw in title_lower for kw in keywords):
                 continue
 
-            metrics = item.get("detail_text", "") or item.get("metrics_area", {}).get("text", "")
+            metrics = item.get("detail_text", "") or item.get("metrics_area", {}).get(
+                "text", ""
+            )
             heat_score = self._parse_zhihu_heat(metrics)
 
             question_id = target.get("id", "")
@@ -472,7 +505,9 @@ class NewsFetcher:
         news_list.sort(key=lambda x: x.get("score", 0), reverse=True)
         return news_list[:limit]
 
-    def _fetch_zhihu_ssr(self, keywords: list[str], limit: int, cookie: str = "") -> list[dict]:
+    def _fetch_zhihu_ssr(
+        self, keywords: list[str], limit: int, cookie: str = ""
+    ) -> list[dict]:
         """从知乎热榜 HTML 页面提取 SSR 渲染的 initialData JSON."""
         news_list: list[dict] = []
         headers = {
@@ -510,9 +545,7 @@ class NewsFetcher:
             return news_list
 
         hot_list = (
-            init_data.get("initialState", {})
-            .get("topstory", {})
-            .get("hotList", [])
+            init_data.get("initialState", {}).get("topstory", {}).get("hotList", [])
         )
 
         for item in hot_list:

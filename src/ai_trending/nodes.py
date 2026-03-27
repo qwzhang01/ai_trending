@@ -26,6 +26,7 @@ log = get_logger("nodes")
 
 # ==================== 工具函数 ====================
 
+
 def _merge_token_usage(
     prev: dict[str, int],
     new: dict[str, int],
@@ -47,17 +48,19 @@ def _merge_token_usage(
           - by_node:             各节点分项用量 {node_name: {total_tokens, ...}}
     """
     merged: dict[str, Any] = {
-        "prompt_tokens":       prev.get("prompt_tokens", 0)       + new.get("prompt_tokens", 0),
-        "completion_tokens":   prev.get("completion_tokens", 0)   + new.get("completion_tokens", 0),
-        "total_tokens":        prev.get("total_tokens", 0)        + new.get("total_tokens", 0),
-        "successful_requests": prev.get("successful_requests", 0) + new.get("successful_requests", 0),
+        "prompt_tokens": prev.get("prompt_tokens", 0) + new.get("prompt_tokens", 0),
+        "completion_tokens": prev.get("completion_tokens", 0)
+        + new.get("completion_tokens", 0),
+        "total_tokens": prev.get("total_tokens", 0) + new.get("total_tokens", 0),
+        "successful_requests": prev.get("successful_requests", 0)
+        + new.get("successful_requests", 0),
     }
     # 保留各节点分项用量，方便排查哪个节点消耗最多
     by_node: dict[str, Any] = dict(prev.get("by_node") or {})
     by_node[node_name] = {
-        "prompt_tokens":       new.get("prompt_tokens", 0),
-        "completion_tokens":   new.get("completion_tokens", 0),
-        "total_tokens":        new.get("total_tokens", 0),
+        "prompt_tokens": new.get("prompt_tokens", 0),
+        "completion_tokens": new.get("completion_tokens", 0),
+        "total_tokens": new.get("total_tokens", 0),
         "successful_requests": new.get("successful_requests", 0),
     }
     merged["by_node"] = by_node
@@ -65,6 +68,7 @@ def _merge_token_usage(
 
 
 # ==================== 节点实现 ====================
+
 
 def collect_github_node(state: dict[str, Any]) -> dict[str, Any]:
     """节点 1: GitHub 热门项目数据采集.
@@ -153,6 +157,7 @@ def score_trends_node(state: dict[str, Any]) -> dict[str, Any]:
         )
 
         import json
+
         scoring_result = json.dumps(output.model_dump(), ensure_ascii=False)
 
         # 累加 token 用量到 State
@@ -193,7 +198,10 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
     previous_report_context = ""
     try:
         from ai_trending.crew.report_writing.tracker import PreviousReportTracker
-        previous_report_context = PreviousReportTracker().get_previous_report_context(current_date)
+
+        previous_report_context = PreviousReportTracker().get_previous_report_context(
+            current_date
+        )
     except Exception as e:
         log.warning(f"[write_report] 上期回顾数据获取失败，将省略该 Section: {e}")
 
@@ -212,6 +220,7 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
 
         # 保存报告到本地文件
         from pathlib import Path
+
         reports_dir = Path.cwd() / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
         report_file = reports_dir / f"{current_date}.md"
@@ -257,13 +266,18 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
 
     publish_results: list[str] = []
 
-    if not report_content or report_content.startswith("# 🤖 AI 日报") and "报告生成失败" in report_content:
+    if (
+        not report_content
+        or report_content.startswith("# 🤖 AI 日报")
+        and "报告生成失败" in report_content
+    ):
         log.warning("[publish] 报告内容为空或生成失败，跳过发布")
         return {"publish_results": ["跳过发布: 报告内容无效"]}
 
     # --- Step 1: GitHub 发布 ---
     try:
         from ai_trending.tools.github_publish_tool import GitHubPublishTool
+
         result = GitHubPublishTool()._run(
             content=report_content,
             filename=f"{current_date}.md",
@@ -279,6 +293,7 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
     # --- Step 2: 微信公众号 HTML + 草稿箱 ---
     try:
         from ai_trending.tools.wechat_publish_tool import WeChatPublishTool
+
         wechat_tool = WeChatPublishTool()
         wechat_result = wechat_tool._run(
             content=report_content,
