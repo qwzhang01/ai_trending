@@ -13,14 +13,18 @@ __all__ = [
 def __getattr__(name: str) -> type:
     if name == "GitHubTrendingTool":
         from ai_trending.tools.github_trending_tool import GitHubTrendingTool
+
         return GitHubTrendingTool
     if name == "AINewsTool":
         from ai_trending.tools.ai_news_tool import AINewsTool
+
         return AINewsTool
     if name == "GitHubPublishTool":
         from ai_trending.tools.github_publish_tool import GitHubPublishTool
+
         return GitHubPublishTool
     if name == "WeChatPublishTool":
         from ai_trending.tools.wechat_publish_tool import WeChatPublishTool
+
         return WeChatPublishTool
     raise AttributeError(f"module 'ai_trending.tools' has no attribute {name!r}")
