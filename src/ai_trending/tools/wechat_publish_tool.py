@@ -17,8 +17,6 @@ import os
 import re
 from datetime import datetime
 
-import markdown  # type: ignore[import-untyped]
-from bs4 import BeautifulSoup
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
@@ -495,12 +493,16 @@ class WeChatPublishTool(BaseTool):
         md_text = re.sub(r"(^- .+)\n\n(- )", r"\1\n\2", md_text, flags=re.MULTILINE)
 
         # Step 1: Markdown → 原始 HTML（启用 tables / fenced_code / nl2br 扩展）
+        import markdown  # type: ignore[import-untyped]  # 懒加载，避免模块级 import 在 CI 中失败
+
         raw_html = markdown.markdown(
             md_text,
             extensions=["tables", "fenced_code", "nl2br"],
         )
 
         # Step 2: 用 BeautifulSoup 遍历节点，注入内联样式
+        from bs4 import BeautifulSoup  # 懒加载，避免模块级 import 在 CI 中失败
+
         soup = BeautifulSoup(raw_html, "html.parser")
 
         for tag_name, style in self._WECHAT_STYLES.items():
