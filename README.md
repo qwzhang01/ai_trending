@@ -12,7 +12,7 @@
 [![CrewAI](https://img.shields.io/badge/CrewAI-1.11-green)](https://github.com/crewAIInc/crewAI)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-blue?logo=github-actions)](https://github.com/features/actions)
-[![Stars](https://img.shields.io/github/stars/your-username/ai_trending?style=social)](https://github.com/your-username/ai_trending)
+[![Stars](https://img.shields.io/github/stars/qwzhang01/ai_trending?style=social)](https://github.com/qwzhang01/ai_trending)
 
 🟢 **已上线运行** · 微信公众号「LLM大模型Seven」每日自动推送
 
@@ -220,7 +220,7 @@ ai_trending/
 ### 1. 克隆 & 安装
 
 ```bash
-git clone https://github.com/your-username/ai_trending.git
+git clone https://github.com/qwzhang01/ai_trending.git
 cd ai_trending
 
 # 使用 uv（推荐，极速）
@@ -474,6 +474,12 @@ class DingtalkPublishTool(BaseTool):
 ## 📄 许可证
 
 本项目基于 [MIT License](./LICENSE) 开源。
+
+---
+
+## 📈 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=qwzhang01/ai_trending&type=Date)](https://star-history.com/#qwzhang01/ai_trending&Date)
 
 ---
 
