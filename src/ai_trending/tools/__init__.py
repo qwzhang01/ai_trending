@@ -30,14 +30,18 @@ def __getattr__(name: str):
     # 支持子模块名访问（供 unittest.mock.patch 解析路径使用）
     if name == "github_trending_tool":
         import ai_trending.tools.github_trending_tool as m
+
         return m
     if name == "ai_news_tool":
         import ai_trending.tools.ai_news_tool as m
+
         return m
     if name == "github_publish_tool":
         import ai_trending.tools.github_publish_tool as m
+
         return m
     if name == "wechat_publish_tool":
         import ai_trending.tools.wechat_publish_tool as m
+
         return m
     raise AttributeError(f"module 'ai_trending.tools' has no attribute {name!r}")
