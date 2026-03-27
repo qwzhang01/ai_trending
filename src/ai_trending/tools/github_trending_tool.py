@@ -16,9 +16,13 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
 from ai_trending.crew.github_trending import GitHubTrendingOrchestrator
+from ai_trending.crew.github_trending.utils import EXCLUDE_REPOS, is_excluded as _is_excluded
 from ai_trending.logger import get_logger
 
 log = get_logger("github_tool")
+
+# 重新导出，供测试和外部模块使用
+__all__ = ["GitHubTrendingInput", "GitHubTrendingTool", "EXCLUDE_REPOS", "_is_excluded"]
 
 
 class GitHubTrendingInput(BaseModel):

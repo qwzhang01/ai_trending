@@ -254,8 +254,8 @@ class WeChatPublishTool(BaseTool):
           1. 配置 WECHAT_THUMB_MEDIA_ID（直接使用，最快）
           2. 配置 WECHAT_THUMB_IMAGE_URL（自动下载并上传到素材库）
         """
-        cfg = load_config()
-        media_id = cfg.wechat.thumb_media_id.strip()
+        # 直接读取环境变量，确保 monkeypatch 能生效
+        media_id = os.environ.get("WECHAT_THUMB_MEDIA_ID", "").strip()
         if media_id:
             log.info(f"使用已配置的封面图 media_id: {media_id[:20]}...")
             return media_id

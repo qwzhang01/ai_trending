@@ -69,6 +69,13 @@ def mock_crew_kickoff(fake_scoring_output):
         mock_result.pydantic = fake_scoring_output
         mock_result.tasks_output = []
         mock_result.raw = ""
+        # token_usage mock
+        mock_usage = MagicMock()
+        mock_usage.prompt_tokens = 1
+        mock_usage.completion_tokens = 1
+        mock_usage.total_tokens = 2
+        mock_usage.successful_requests = 1
+        mock_result.token_usage = mock_usage
         mock.return_value = mock_result
         yield mock
 
@@ -136,7 +143,7 @@ class TestTrendScoringCrew:
     """测试 TrendScoringCrew 的核心行为。"""
 
     def test_run_returns_scoring_output(self, mock_llm, mock_crew_kickoff, fake_scoring_output):
-        """正常输入时，run() 应返回 TrendScoringOutput 实例。"""
+        """正常输入时，run() 应返回 (TrendScoringOutput, token_usage) 元组。"""
         crew = TrendScoringCrew()
         result = crew.run(
             github_data="## GitHub 热点\n1. owner/test-repo ⭐ 5000",
@@ -144,9 +151,12 @@ class TestTrendScoringCrew:
             current_date="2025-01-01",
         )
 
-        assert isinstance(result, TrendScoringOutput)
-        assert len(result.scored_repos) == 1
-        assert result.scored_repos[0].repo == "owner/test-repo"
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, TrendScoringOutput)
+        assert len(output.scored_repos) == 1
+        assert output.scored_repos[0].repo == "owner/test-repo"
+        assert isinstance(token_usage, dict)
 
     def test_run_with_empty_data(self, mock_llm, mock_crew_kickoff):
         """空数据输入时，run() 不应崩溃。"""
@@ -156,7 +166,9 @@ class TestTrendScoringCrew:
             news_data="",
             current_date="2025-01-01",
         )
-        assert isinstance(result, TrendScoringOutput)
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, TrendScoringOutput)
 
     def test_run_raises_on_crew_failure(self, mock_llm):
         """Crew.kickoff 抛出异常时，run() 应向上传播异常（由节点层处理兜底）。"""
@@ -183,6 +195,7 @@ class TestTrendScoringCrew:
             mock_result.pydantic = None
             mock_result.tasks_output = []
             mock_result.raw = json.dumps(raw_data, ensure_ascii=False)
+            mock_result.token_usage = None
             mock.return_value = mock_result
 
             crew = TrendScoringCrew()
@@ -192,8 +205,10 @@ class TestTrendScoringCrew:
                 current_date="2025-01-01",
             )
 
-        assert isinstance(result, TrendScoringOutput)
-        assert len(result.scored_repos) == 1
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, TrendScoringOutput)
+        assert len(output.scored_repos) == 1
 
     def test_run_returns_fallback_on_invalid_raw(self, mock_llm):
         """pydantic 和 raw 都无效时，应返回兜底空结果。"""
@@ -202,6 +217,7 @@ class TestTrendScoringCrew:
             mock_result.pydantic = None
             mock_result.tasks_output = []
             mock_result.raw = "这不是有效的 JSON"
+            mock_result.token_usage = None
             mock.return_value = mock_result
 
             crew = TrendScoringCrew()
@@ -212,9 +228,11 @@ class TestTrendScoringCrew:
             )
 
         # 应返回兜底空结果，不崩溃
-        assert isinstance(result, TrendScoringOutput)
-        assert result.scored_repos == []
-        assert result.daily_summary.top_trend == "评分数据不可用"
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, TrendScoringOutput)
+        assert output.scored_repos == []
+        assert output.daily_summary.top_trend == "评分数据不可用"
 
     def test_parse_from_raw_valid_json(self):
         """_parse_from_raw 能正确解析有效 JSON。"""

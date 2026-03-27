@@ -208,9 +208,10 @@ class TestWriteReportNode:
         """节点应返回包含 report_content 键的字典。"""
         monkeypatch.chdir(tmp_path)
         fake_output = ReportOutput(content=SAMPLE_REPORT, validation_issues=[])
+        fake_token_usage = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2, "successful_requests": 1}
 
         with patch("ai_trending.crew.report_writing.ReportWritingCrew") as mock_cls:
-            mock_cls.return_value.run.return_value = fake_output
+            mock_cls.return_value.run.return_value = (fake_output, fake_token_usage)
 
             state = {
                 "current_date": "2025-01-01",
@@ -230,9 +231,10 @@ class TestWriteReportNode:
             content=SAMPLE_REPORT,
             validation_issues=["缺少必要 Section：## 趋势洞察"],
         )
+        fake_token_usage = {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2, "successful_requests": 1}
 
         with patch("ai_trending.crew.report_writing.ReportWritingCrew") as mock_cls:
-            mock_cls.return_value.run.return_value = fake_output
+            mock_cls.return_value.run.return_value = (fake_output, fake_token_usage)
 
             state = {
                 "current_date": "2025-01-01",

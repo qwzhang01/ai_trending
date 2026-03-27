@@ -2,6 +2,8 @@
 
 实际的抓取逻辑和 LLM 筛选已下沉到 crew/new_collect 包中，
 本工具只负责作为 CrewAI BaseTool 接口，触发 NewsCollectCrew 并返回结果。
+
+同时继承 NewsFetcher，以便测试可以直接测试抓取方法。
 """
 
 from typing import Type
@@ -9,6 +11,8 @@ from typing import Type
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
+from ai_trending.crew.new_collect import NewsCollectCrew
+from ai_trending.crew.new_collect.fetchers import NewsFetcher
 from ai_trending.logger import get_logger
 
 log = get_logger("news_tool")
@@ -27,8 +31,12 @@ class AINewsInput(BaseModel):
     )
 
 
-class AINewsTool(BaseTool):
-    """触发 NewsCollectCrew 抓取并筛选最新 AI 大模型相关新闻."""
+class AINewsTool(BaseTool, NewsFetcher):
+    """触发 NewsCollectCrew 抓取并筛选最新 AI 大模型相关新闻.
+
+    继承 NewsFetcher，提供底层抓取方法（_fetch_hacker_news、_fetch_reddit_rss 等），
+    同时通过 _run 方法触发 NewsCollectCrew 完成 LLM 筛选。
+    """
 
     name: str = "ai_news_tool"
     description: str = (
@@ -40,8 +48,6 @@ class AINewsTool(BaseTool):
 
     def _run(self, keywords: str = "AI,LLM,AI Agent", top_n: int = 10) -> str:
         """触发 NewsCollectCrew，返回格式化的新闻摘要."""
-        from ai_trending.crew.new_collect import NewsCollectCrew
-
         keyword_list = [k.strip() for k in keywords.split(",") if k.strip()]
         log.info(f"[AINewsTool] 触发 NewsCollectCrew，关键词: {keyword_list}")
 

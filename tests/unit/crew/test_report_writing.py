@@ -79,6 +79,13 @@ def mock_crew_kickoff_with_report():
         mock_result.pydantic = fake_output
         mock_result.tasks_output = []
         mock_result.raw = VALID_REPORT
+        # token_usage mock
+        mock_usage = MagicMock()
+        mock_usage.prompt_tokens = 1
+        mock_usage.completion_tokens = 1
+        mock_usage.total_tokens = 2
+        mock_usage.successful_requests = 1
+        mock_result.token_usage = mock_usage
         mock.return_value = mock_result
         yield mock
 
@@ -154,7 +161,7 @@ class TestReportWritingCrew:
     """测试 ReportWritingCrew 的核心行为。"""
 
     def test_run_returns_report_output(self, mock_llm, mock_crew_kickoff_with_report):
-        """正常输入时，run() 应返回 ReportOutput 实例。"""
+        """正常输入时，run() 应返回 (ReportOutput, token_usage) 元组。"""
         crew = ReportWritingCrew()
         result = crew.run(
             github_data="## GitHub 热点\n1. owner/test-repo",
@@ -163,8 +170,10 @@ class TestReportWritingCrew:
             current_date="2025-01-01",
         )
 
-        assert isinstance(result, ReportOutput)
-        assert len(result.content) > 0
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)
+        assert len(output.content) > 0
 
     def test_run_with_empty_data(self, mock_llm, mock_crew_kickoff_with_report):
         """空数据输入时，run() 不应崩溃。"""
@@ -175,7 +184,9 @@ class TestReportWritingCrew:
             scoring_result="",
             current_date="2025-01-01",
         )
-        assert isinstance(result, ReportOutput)
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)
 
     def test_run_raises_on_crew_failure(self, mock_llm):
         """Crew.kickoff 抛出异常时，run() 应向上传播异常。"""
@@ -198,6 +209,7 @@ class TestReportWritingCrew:
             mock_result.pydantic = None
             mock_result.tasks_output = []
             mock_result.raw = "# 测试日报\n内容..."
+            mock_result.token_usage = None
             mock.return_value = mock_result
 
             crew = ReportWritingCrew()
@@ -208,8 +220,10 @@ class TestReportWritingCrew:
                 current_date="2025-01-01",
             )
 
-        assert isinstance(result, ReportOutput)
-        assert "测试日报" in result.content
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)
+        assert "测试日报" in output.content
 
     def test_run_records_validation_issues(self, mock_llm):
         """格式校验失败时，validation_issues 应记录问题，但不阻断返回。"""
@@ -219,6 +233,7 @@ class TestReportWritingCrew:
             mock_result.pydantic = ReportOutput(content=bad_content)
             mock_result.tasks_output = []
             mock_result.raw = bad_content
+            mock_result.token_usage = None
             mock.return_value = mock_result
 
             crew = ReportWritingCrew()
@@ -229,6 +244,8 @@ class TestReportWritingCrew:
                 current_date="2025-01-01",
             )
 
-        assert isinstance(result, ReportOutput)
-        assert len(result.validation_issues) > 0  # 应记录校验问题
-        assert result.content == bad_content  # 内容不被修改
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)
+        assert len(output.validation_issues) > 0  # 应记录校验问题
+        assert output.content == bad_content  # 内容不被修改

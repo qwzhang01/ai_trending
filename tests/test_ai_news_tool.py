@@ -102,7 +102,7 @@ class TestAINewsInput:
 
 class TestFetchHackerNews:
     def test_returns_news_list(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=_make_hn_response()):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=_make_hn_response()):
             result = tool._fetch_hacker_news(["AI"], 5)
         assert len(result) == 1
         assert result[0]["source"] == "Hacker News"
@@ -110,7 +110,7 @@ class TestFetchHackerNews:
         assert result[0]["score"] == 500
 
     def test_returns_empty_on_request_failure(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=None):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=None):
             result = tool._fetch_hacker_news(["AI"], 5)
         assert result == []
 
@@ -123,7 +123,7 @@ class TestFetchHackerNews:
             "created_at": "2026-03-19T10:00:00Z",
             "objectID": "99999",
         }
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=_make_hn_response([hit_no_url])):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=_make_hn_response([hit_no_url])):
             result = tool._fetch_hacker_news(["AI"], 5)
         assert "99999" in result[0]["url"]
 
@@ -135,7 +135,7 @@ class TestFetchHackerNews:
             call_count += 1
             return _make_hn_response([])
 
-        with patch("ai_trending.tools.ai_news_tool.safe_request", side_effect=mock_request):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", side_effect=mock_request):
             tool._fetch_hacker_news(["k1", "k2", "k3", "k4", "k5"], 5)
         assert call_count == 3
 
@@ -144,21 +144,21 @@ class TestFetchHackerNews:
 
 class TestFetchRedditRss:
     def test_returns_news_from_rss(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=_make_reddit_rss_response()):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=_make_reddit_rss_response()):
             result = tool._fetch_reddit_rss("artificial", ["AI"])
         assert len(result) == 1
         assert "Reddit r/artificial" == result[0]["source"]
         assert result[0]["score"] == 20  # RSS 默认分数
 
     def test_returns_empty_on_request_failure(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=None):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=None):
             result = tool._fetch_reddit_rss("artificial", ["AI"])
         assert result == []
 
     def test_handles_invalid_xml(self, tool, tmp_output_dir):
         mock = MagicMock()
         mock.text = "not valid xml <<<"
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=mock):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=mock):
             result = tool._fetch_reddit_rss("artificial", ["AI"])
         assert result == []
 
@@ -167,21 +167,21 @@ class TestFetchRedditRss:
 
 class TestFetchRedditPullpush:
     def test_returns_news_from_pullpush(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=_make_pullpush_response()):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=_make_pullpush_response()):
             result = tool._fetch_reddit_pullpush("MachineLearning", ["LLM"])
         assert len(result) == 1
         assert result[0]["score"] == 300
         assert "reddit.com" in result[0]["url"]
 
     def test_returns_empty_on_request_failure(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=None):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=None):
             result = tool._fetch_reddit_pullpush("MachineLearning", ["LLM"])
         assert result == []
 
     def test_handles_invalid_json(self, tool, tmp_output_dir):
         mock = MagicMock()
         mock.json.side_effect = ValueError("bad json")
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=mock):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=mock):
             result = tool._fetch_reddit_pullpush("MachineLearning", ["LLM"])
         assert result == []
 
@@ -190,21 +190,21 @@ class TestFetchRedditPullpush:
 
 class TestFetchNewsdata:
     def test_returns_articles(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=_make_newsdata_response()):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=_make_newsdata_response()):
             result = tool._fetch_newsdata(["AI"], 5, "fake-key")
         assert len(result) == 1
         assert result[0]["title"] == "OpenAI Announces New Model"
         assert result[0]["score"] == 50
 
     def test_returns_empty_on_request_failure(self, tool, tmp_output_dir):
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=None):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=None):
             result = tool._fetch_newsdata(["AI"], 5, "fake-key")
         assert result == []
 
     def test_returns_empty_on_non_success_status(self, tool, tmp_output_dir):
         mock = MagicMock()
         mock.json.return_value = {"status": "error", "message": "quota exceeded"}
-        with patch("ai_trending.tools.ai_news_tool.safe_request", return_value=mock):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", return_value=mock):
             result = tool._fetch_newsdata(["AI"], 5, "fake-key")
         assert result == []
 
@@ -215,7 +215,7 @@ class TestFetchNewsdata:
             captured_params.update(kwargs.get("params", {}))
             return _make_newsdata_response([])
 
-        with patch("ai_trending.tools.ai_news_tool.safe_request", side_effect=mock_request):
+        with patch("ai_trending.crew.new_collect.fetchers.safe_request", side_effect=mock_request):
             tool._fetch_newsdata(["k1", "k2", "k3", "k4", "k5", "k6"], 5, "key")
         # 最多5个关键词，用 OR 连接
         assert captured_params["q"].count(" OR ") == 4
@@ -246,24 +246,10 @@ class TestParseZhihuHeat:
 # ── _run (集成) ───────────────────────────────────────────────────
 
 class TestAINewsToolRun:
-    def _mock_fetch_all_async(self, news_list, stats):
-        """返回一个 coroutine，模拟 _fetch_all_async 的返回值."""
-        async def _coro(*args, **kwargs):
-            return news_list, stats
-        return _coro
-
     def test_run_returns_formatted_output(self, tool, tmp_output_dir):
-        news = [
-            {
-                "title": "GPT-5 Released",
-                "url": "https://openai.com/gpt5",
-                "score": 500,
-                "source": "Hacker News",
-                "summary": "OpenAI releases GPT-5",
-                "time": "2026-03-19",
-            }
-        ]
-        with patch.object(tool, "_fetch_all_async", self._mock_fetch_all_async(news, ["HackerNews: 1 条"])):
+        """_run 调用 NewsCollectCrew.run 并返回结果."""
+        with patch("ai_trending.tools.ai_news_tool.NewsCollectCrew") as mock_crew_cls:
+            mock_crew_cls.return_value.run.return_value = "### 1. GPT-5 Released\n- **来源**: Hacker News\n- **热度**: 500 分"
             result = tool._run(keywords="AI", top_n=5)
 
         assert "GPT-5 Released" in result
@@ -271,43 +257,34 @@ class TestAINewsToolRun:
         assert "500" in result
 
     def test_run_returns_error_message_when_no_news(self, tool, tmp_output_dir):
-        with patch.object(tool, "_fetch_all_async", self._mock_fetch_all_async([], [])):
+        """NewsCollectCrew.run 返回未能获取时，_run 应透传该消息."""
+        with patch("ai_trending.tools.ai_news_tool.NewsCollectCrew") as mock_crew_cls:
+            mock_crew_cls.return_value.run.return_value = "未能获取到最新的 AI 相关新闻。"
             result = tool._run(keywords="AI", top_n=5)
         assert "未能获取" in result
 
-    def test_run_deduplicates_by_title(self, tool, tmp_output_dir):
-        """相同标题的新闻应被去重."""
-        news = [
-            {"title": "Same Title", "url": "https://a.com", "score": 100, "source": "HN", "summary": "", "time": "2026-03-19"},
-            {"title": "same title", "url": "https://b.com", "score": 90,  "source": "Reddit", "summary": "", "time": "2026-03-19"},
-            {"title": "Different Title", "url": "https://c.com", "score": 80, "source": "HN", "summary": "", "time": "2026-03-19"},
-        ]
-        with patch.object(tool, "_fetch_all_async", self._mock_fetch_all_async(news, [])):
-            result = tool._run(keywords="AI", top_n=10)
-        # 去重后只有2条
-        assert result.count("### ") == 2
+    def test_run_returns_error_on_exception(self, tool, tmp_output_dir):
+        """NewsCollectCrew.run 抛出异常时，_run 应返回错误提示."""
+        with patch("ai_trending.tools.ai_news_tool.NewsCollectCrew") as mock_crew_cls:
+            mock_crew_cls.return_value.run.side_effect = Exception("LLM 超时")
+            result = tool._run(keywords="AI", top_n=5)
+        assert "❌" in result
+        assert "新闻采集失败" in result
 
-    def test_run_sorts_by_score(self, tool, tmp_output_dir):
-        """结果应按 score 降序排列."""
-        news = [
-            {"title": "Low Score News", "url": "https://a.com", "score": 10, "source": "HN", "summary": "", "time": "2026-03-19"},
-            {"title": "High Score News", "url": "https://b.com", "score": 999, "source": "HN", "summary": "", "time": "2026-03-19"},
-        ]
-        with patch.object(tool, "_fetch_all_async", self._mock_fetch_all_async(news, [])):
-            result = tool._run(keywords="AI", top_n=10)
-        # High Score 应排在前面
-        assert result.index("High Score News") < result.index("Low Score News")
+    def test_run_passes_keywords_to_crew(self, tool, tmp_output_dir):
+        """_run 应将关键词列表传给 NewsCollectCrew."""
+        with patch("ai_trending.tools.ai_news_tool.NewsCollectCrew") as mock_crew_cls:
+            mock_crew_cls.return_value.run.return_value = "新闻结果"
+            tool._run(keywords="AI,LLM,大模型", top_n=5)
+        # 验证 NewsCollectCrew 被正确实例化
+        mock_crew_cls.assert_called_once_with(keywords=["AI", "LLM", "大模型"], top_n=5)
 
     def test_run_respects_top_n(self, tool, tmp_output_dir):
-        """只返回 top_n 条新闻."""
-        news = [
-            {"title": f"News {i}", "url": f"https://example.com/{i}", "score": i,
-             "source": "HN", "summary": "", "time": "2026-03-19"}
-            for i in range(20)
-        ]
-        with patch.object(tool, "_fetch_all_async", self._mock_fetch_all_async(news, [])):
-            result = tool._run(keywords="AI", top_n=3)
-        assert result.count("### ") == 3
+        """top_n 参数应传递给 NewsCollectCrew."""
+        with patch("ai_trending.tools.ai_news_tool.NewsCollectCrew") as mock_crew_cls:
+            mock_crew_cls.return_value.run.return_value = "新闻结果"
+            tool._run(keywords="AI", top_n=3)
+        mock_crew_cls.assert_called_once_with(keywords=["AI"], top_n=3)
 
 
 # ── _fetch_all_async ──────────────────────────────────────────────

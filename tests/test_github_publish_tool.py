@@ -75,17 +75,31 @@ class TestSaveLocally:
 # ── _run — 无环境变量时降级到本地 ────────────────────────────────
 
 class TestGitHubPublishToolRunFallback:
-    def test_no_token_saves_locally(self, tool, tmp_output_dir, monkeypatch):
-        monkeypatch.delenv("GITHUB_TRENDING_TOKEN", raising=False)
-        monkeypatch.delenv("GITHUB_REPORT_REPO", raising=False)
-        result = tool._run(content=SAMPLE_CONTENT)
-        assert "GITHUB_TOKEN" in result
+    def test_no_token_saves_locally(self, tool, tmp_output_dir):
+        """未设置 token 时，应降级保存到本地并提示 GITHUB_TRENDING_TOKEN。"""
+        from ai_trending.config import AppConfig, GitHubConfig, LLMConfig, NewsConfig, WeChatConfig
+        fake_cfg = AppConfig(
+            llm=LLMConfig(),
+            github=GitHubConfig(token="", report_repo=""),
+            news=NewsConfig(),
+            wechat=WeChatConfig(),
+        )
+        with patch("ai_trending.tools.github_publish_tool.load_config", return_value=fake_cfg):
+            result = tool._run(content=SAMPLE_CONTENT)
+        assert "GITHUB_TRENDING_TOKEN" in result
         assert "本地路径" in result
 
-    def test_no_repo_saves_locally(self, tool, tmp_output_dir, monkeypatch):
-        monkeypatch.setenv("GITHUB_TOKEN", "fake-token")
-        monkeypatch.delenv("GITHUB_REPORT_REPO", raising=False)
-        result = tool._run(content=SAMPLE_CONTENT)
+    def test_no_repo_saves_locally(self, tool, tmp_output_dir):
+        """有 token 但未设置 repo 时，应降级保存到本地并提示 GITHUB_REPORT_REPO。"""
+        from ai_trending.config import AppConfig, GitHubConfig, LLMConfig, NewsConfig, WeChatConfig
+        fake_cfg = AppConfig(
+            llm=LLMConfig(),
+            github=GitHubConfig(token="fake-token", report_repo=""),
+            news=NewsConfig(),
+            wechat=WeChatConfig(),
+        )
+        with patch("ai_trending.tools.github_publish_tool.load_config", return_value=fake_cfg):
+            result = tool._run(content=SAMPLE_CONTENT)
         assert "GITHUB_REPORT_REPO" in result
         assert "本地路径" in result
 

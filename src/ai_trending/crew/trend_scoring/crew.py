@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
@@ -35,6 +36,32 @@ _FALLBACK_OUTPUT = TrendScoringOutput(
         overall_sentiment="中性",
     ),
 )
+
+
+def _extract_token_usage(crew_output) -> dict[str, int]:
+    """从 CrewOutput 中提取 token 用量，返回标准化字典。
+
+    CrewAI 的 CrewOutput.token_usage 是 UsageMetrics 对象，
+    包含 total_tokens、prompt_tokens、completion_tokens、successful_requests。
+    """
+    empty: dict[str, int] = {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "successful_requests": 0,
+    }
+    try:
+        usage = getattr(crew_output, "token_usage", None)
+        if usage is None:
+            return empty
+        return {
+            "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+            "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
+            "total_tokens": int(getattr(usage, "total_tokens", 0) or 0),
+            "successful_requests": int(getattr(usage, "successful_requests", 0) or 0),
+        }
+    except Exception:
+        return empty
 
 
 @CrewBase
@@ -77,6 +104,20 @@ class TrendScoringCrew:
             verbose=False,
         )
 
+    def _parse_from_raw(self, raw: str) -> TrendScoringOutput | None:
+        """从原始文本中兜底解析 TrendScoringOutput。"""
+        if not raw:
+            return None
+        try:
+            # 尝试提取 JSON 块（支持 markdown 代码块包裹）
+            json_match = re.search(r"\{.*\}", raw.strip(), re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group(0))
+                return TrendScoringOutput.model_validate(data)
+        except Exception as e:
+            log.warning(f"[TrendScoringCrew] raw 文本解析失败: {e}")
+        return None
+
     def run(
         self,
         github_data: str,
@@ -93,7 +134,7 @@ class TrendScoringCrew:
         Returns:
             (TrendScoringOutput, token_usage_dict)，其中 token_usage_dict 包含
             prompt_tokens、completion_tokens、total_tokens、successful_requests。
-            若 LLM 调用失败，返回兜底空结果和空 token 统计。
+            若 LLM 调用失败，抛出异常由节点层处理兜底。
         """
         log.info(f"[TrendScoringCrew] 开始评分 ({current_date})")
 
@@ -137,44 +178,3 @@ class TrendScoringCrew:
         except Exception as e:
             log.error(f"[TrendScoringCrew] 评分失败: {e}")
             raise
-
-
-def _extract_token_usage(crew_output) -> dict[str, int]:
-    """从 CrewOutput 中提取 token 用量，返回标准化字典。
-
-    CrewAI 的 CrewOutput.token_usage 是 UsageMetrics 对象，
-    包含 total_tokens、prompt_tokens、completion_tokens、successful_requests。
-    """
-    empty: dict[str, int] = {
-        "prompt_tokens": 0,
-        "completion_tokens": 0,
-        "total_tokens": 0,
-        "successful_requests": 0,
-    }
-    try:
-        usage = getattr(crew_output, "token_usage", None)
-        if usage is None:
-            return empty
-        return {
-            "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
-            "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
-            "total_tokens": int(getattr(usage, "total_tokens", 0) or 0),
-            "successful_requests": int(getattr(usage, "successful_requests", 0) or 0),
-        }
-    except Exception:
-        return empty
-
-    def _parse_from_raw(self, raw: str) -> TrendScoringOutput | None:
-        """从原始文本中兜底解析 TrendScoringOutput。"""
-        if not raw:
-            return None
-        try:
-            # 尝试提取 JSON 块
-            import re
-            json_match = re.search(r"\{.*\}", raw.strip(), re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group(0))
-                return TrendScoringOutput.model_validate(data)
-        except Exception as e:
-            log.warning(f"[TrendScoringCrew] raw 文本解析失败: {e}")
-        return None
