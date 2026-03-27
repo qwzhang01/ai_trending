@@ -1,5 +1,3 @@
-<![CDATA[<div align="center">
-
 # 🤖 AI Trending
 
 **每日 AI 开源项目与新闻聚合报告系统**
@@ -14,7 +12,6 @@
 
 [快速开始](#-快速开始) · [架构设计](#-架构设计) · [配置说明](#-配置说明) · [部署方式](#-部署方式) · [贡献指南](./CONTRIBUTING.md)
 
-</div>
 
 ---
 
@@ -444,4 +441,3 @@ class DingtalkPublishTool(BaseTool):
 - [CrewAI](https://github.com/crewAIInc/crewAI) — 多 Agent 协作框架
 - [LiteLLM](https://github.com/BerriAI/litellm) — 统一 LLM API 接口
 - [uv](https://github.com/astral-sh/uv) — 极速 Python 包管理器
-]]>
