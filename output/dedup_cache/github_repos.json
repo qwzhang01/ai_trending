@@ -39,6 +39,11 @@
     "GLips/Figma-Context-MCP": "2026-03-27",
     "danny-avila/LibreChat": "2026-03-27",
     "rerun-io/rerun": "2026-03-27",
-    "apache/seatunnel": "2026-03-27"
+    "apache/seatunnel": "2026-03-27",
+    "microsoft/agent-framework": "2026-03-30",
+    "ruvnet/ruflo": "2026-03-30",
+    "Snailclimb/JavaGuide": "2026-03-30",
+    "modelscope/ms-swift": "2026-03-30",
+    "mcp-use/mcp-use": "2026-03-30"
   }
 }
