@@ -44,6 +44,11 @@
     "ruvnet/ruflo": "2026-03-30",
     "Snailclimb/JavaGuide": "2026-03-30",
     "modelscope/ms-swift": "2026-03-30",
-    "mcp-use/mcp-use": "2026-03-30"
+    "mcp-use/mcp-use": "2026-03-30",
+    "awslabs/mcp": "2026-03-31",
+    "alibaba/spring-ai-alibaba": "2026-03-31",
+    "casdoor/casdoor": "2026-03-31",
+    "triggerdotdev/trigger.dev": "2026-03-31",
+    "dataelement/bisheng": "2026-03-31"
   }
 }
