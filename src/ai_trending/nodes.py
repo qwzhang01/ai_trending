@@ -344,17 +344,19 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
     log.info(f"[editorial_planning] 开始编辑选题规划 ({current_date})")
 
     # 获取近期话题上下文（失败时返回空字符串，不阻断）
+    # 注意：EditorialPlanningCrew 的 Agent 现在通过工具主动查询话题，
+    # topic_context 参数保留用于兼容，实际不再推送到 Prompt
     topic_context = ""
-    try:
-        from ai_trending.crew.report_writing.topic_tracker import TopicTracker
 
-        topic_context = TopicTracker().get_topic_context()
-        if topic_context and "无近期" not in topic_context:
-            log.info("[editorial_planning] 已获取近期话题追踪上下文")
-        else:
-            log.info("[editorial_planning] 无近期话题追踪记录")
+    # 注入 DecisionMemory 历史决策参考（失败不阻断）
+    decision_guidance = ""
+    try:
+        from ai_trending.crew.report_writing.decision_memory import DecisionMemory
+        decision_guidance = DecisionMemory().get_decision_guidance()
+        if decision_guidance and "无历史" not in decision_guidance:
+            log.info("[editorial_planning] 已获取历史编辑决策参考")
     except Exception as e:
-        log.warning(f"[editorial_planning] TopicTracker 获取失败，跳过话题上下文: {e}")
+        log.warning(f"[editorial_planning] DecisionMemory 获取失败，跳过: {e}")
 
     try:
         from ai_trending.crew.editorial_planning import EditorialPlanningCrew
@@ -376,7 +378,12 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
             f"headline={plan.headline.chosen_item}, "
             f"token 用量 {token_usage.get('total_tokens', 0)}"
         )
-        return {"editorial_plan": editorial_plan_text, "token_usage": merged_usage}
+        return {
+            "editorial_plan": editorial_plan_text,
+            "editorial_plan_raw": plan.model_dump_json() if hasattr(plan, "model_dump_json") else "{}",
+            "decision_guidance": decision_guidance,  # 存入 state 供 quality_review_node 使用
+            "token_usage": merged_usage,
+        }
 
     except Exception as e:
         log.error(f"[editorial_planning] EditorialPlanningCrew 失败: {e}")
@@ -498,22 +505,25 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
             for issue in output.validation_issues:
                 errors.append(f"write_report/格式校验: {issue}")
 
-        # 记录质量结果到 StyleMemory（失败不阻断）
+        # 提取本次日报的好/坏表达模式（仅检测，不立即记录）
+        # OPT-006: 记录推迟到 publish_node 发布成功后才触发（只记录真正好的日报）
+        good_patterns_json = "[]"
         try:
+            import json as _json
             from ai_trending.crew.report_writing.style_memory import StyleMemory
 
             style_mem = StyleMemory()
-            good_patterns, bad_patterns = style_mem.extract_patterns_from_report(report)
-            style_mem.record_quality_result(
-                date=current_date,
-                validation_issues=output.validation_issues,
-                good_patterns=good_patterns,
-                bad_patterns=bad_patterns,
-            )
+            good_patterns, _ = style_mem.extract_patterns_from_report(report)
+            good_patterns_json = _json.dumps(good_patterns, ensure_ascii=False)
         except Exception as e:
-            log.warning(f"[write_report] StyleMemory 记录失败，不影响发布: {e}")
+            log.warning(f"[write_report] StyleMemory 模式提取失败，不影响发布: {e}")
 
-        result: dict[str, Any] = {"report_content": report, "token_usage": merged_usage}
+        result: dict[str, Any] = {
+            "report_content": report,
+            "writing_brief_text": writing_brief_text,  # 供 quality_review_node 事实核对
+            "good_patterns_json": good_patterns_json,  # 供 publish_node 发布成功后记录
+            "token_usage": merged_usage,
+        }
         if errors:
             result["errors"] = errors
         return result
@@ -555,6 +565,7 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
             report_content=report_content,
             scoring_result=scoring_result,
             current_date=current_date,
+            writing_brief=state.get("writing_brief_text", ""),
         )
 
         # 格式化审核摘要
@@ -582,6 +593,34 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
             errors.append(
                 f"quality_review: 审核通过但有 {review_result.warning_count} 条 warning"
             )
+
+        # 记录编辑决策结果到 DecisionMemory（失败不阻断）
+        try:
+            import json as _json
+            from ai_trending.crew.report_writing.decision_memory import DecisionMemory
+
+            plan_raw = state.get("editorial_plan_raw", "{}")
+            plan_data = _json.loads(plan_raw) if plan_raw else {}
+            signal = plan_data.get("signal_strength", "yellow")
+            headline = plan_data.get("headline", {})
+            headline_type = "news" if "新闻" in str(headline.get("chosen_item", "")) else "repo"
+            repo_angles = plan_data.get("repo_angles", [])
+            angle = repo_angles[0].get("angle", "") if repo_angles else ""
+            kill_list_size = len(plan_data.get("kill_list", []))
+            # 估算通过检查项数（issues 中 error 数越少越好）
+            passed_checks = max(0, 18 - review_result.error_count * 3 - review_result.warning_count)
+
+            DecisionMemory().record_decision(
+                date=current_date,
+                signal_strength=signal,
+                headline_type=headline_type,
+                angle_used=angle,
+                kill_list_size=kill_list_size,
+                quality_passed=review_result.passed,
+                passed_checks=passed_checks,
+            )
+        except Exception as e:
+            log.warning(f"[quality_review] DecisionMemory 记录失败，不影响发布: {e}")
 
         result: dict[str, Any] = {
             "quality_review": review_summary,
@@ -652,4 +691,51 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
         log.error(f"[publish] 微信 HTML 生成失败: {e}")
         publish_results.append(f"微信HTML: 失败 - {e}")
 
+    # Post-publish hook: 发布完成后记录好表达模式（OPT-006）
+    any_success = any(r for r in publish_results if "失败" not in r and "跳过" not in r)
+    if any_success:
+        _record_successful_patterns(state)
+
     return {"publish_results": publish_results}
+
+
+def _record_successful_patterns(state: dict[str, Any]) -> None:
+    """Post-publish hook: 发布成功后才记录好表达模式到 StyleMemory.
+
+    只有发布成功的日报才触发，确保 StyleMemory 记录的都是通过了完整检验的"好日报"。
+    （Claude Code 启发：只有最终成功的输出才触发记忆提取）
+    """
+    import json as _json
+
+    current_date = state.get("current_date", "")
+    good_patterns_json = state.get("good_patterns_json", "[]")
+    quality_review = state.get("quality_review", "")
+    report_content = state.get("report_content", "")
+
+    # 只在质量审核通过（或未审核）的情况下记录好模式
+    quality_failed = quality_review and "未通过" in quality_review and "通过" not in quality_review.replace("未通过", "")
+
+    if quality_failed:
+        log.info("[post_publish] 质量审核未通过，跳过好模式记录")
+        return
+
+    try:
+        good_patterns: list[str] = _json.loads(good_patterns_json) if good_patterns_json else []
+        bad_patterns: list[str] = []
+
+        from ai_trending.crew.report_writing.style_memory import StyleMemory
+
+        style_mem = StyleMemory()
+        # 发布成功时也重新提取一次（避免仅靠 write_report 时的结果）
+        if report_content:
+            _, bad_patterns = style_mem.extract_patterns_from_report(report_content)
+
+        style_mem.record_quality_result(
+            date=current_date,
+            validation_issues=[],  # 发布成功 = 已通过检验，不记录阻断性问题
+            good_patterns=good_patterns,
+            bad_patterns=bad_patterns,
+        )
+        log.info(f"[post_publish] StyleMemory 好模式记录完成 ({len(good_patterns)} 条)")
+    except Exception as e:
+        log.warning(f"[post_publish] StyleMemory 记录失败（不影响发布结果）: {e}")

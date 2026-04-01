@@ -44,9 +44,13 @@ class TrendingState(TypedDict, total=False):
 
     # --- 编辑决策层输出 ---
     editorial_plan: str  # 编辑部选题 Plan 文本（由 editorial_planning 节点写入）
+    editorial_plan_raw: str  # EditorialPlan JSON（由 editorial_planning 节点写入，供 DecisionMemory 记录）
+    decision_guidance: str  # 历史决策参考文本（由 editorial_planning 节点写入）
 
     # --- 报告层输出 ---
     report_content: str  # 最终 Markdown 报告（由 write_report 节点写入）
+    writing_brief_text: str  # 写作简报文本（由 write_report 节点写入，供 quality_review 事实核对）
+    good_patterns_json: str  # 本期好表达模式 JSON（由 write_report 节点写入，供 publish 后记录）
 
     # --- 质量审核层输出 ---
     quality_review: str  # 质量审核结果摘要（由 quality_review 节点写入）

@@ -443,7 +443,10 @@ class TestWriteReportNodeStyleMemory:
     def test_quality_result_recorded_after_report(
         self, MockPrevTracker, MockCrew, MockTopicTracker, MockStyleMemory
     ):
-        """报告生成后应调用 StyleMemory.record_quality_result。"""
+        """OPT-006: record_quality_result 已移到 publish_node（post-publish hook）。
+        write_report_node 只调用 extract_patterns_from_report，不再调用 record_quality_result。
+        验证 good_patterns_json 被写入 state，供 publish_node 使用。
+        """
         from ai_trending.nodes import write_report_node
 
         mock_prev = MagicMock()
@@ -478,15 +481,14 @@ class TestWriteReportNodeStyleMemory:
             "scoring_result": '{"scored_repos": [], "scored_news": []}',
             "editorial_plan": "",
         }
-        write_report_node(state)
+        result = write_report_node(state)
 
-        # 验证 record_quality_result 被调用
-        mock_style.record_quality_result.assert_called_once()
-        call_kwargs = mock_style.record_quality_result.call_args
-        assert call_kwargs.kwargs["date"] == "2026-04-01"
-        assert call_kwargs.kwargs["validation_issues"] == ["缺少信号强度"]
-        assert call_kwargs.kwargs["good_patterns"] == ["good1"]
-        assert call_kwargs.kwargs["bad_patterns"] == ["bad1"]
+        # OPT-006: write_report_node 不再调用 record_quality_result（已移到 publish_node）
+        mock_style.record_quality_result.assert_not_called()
+        # 验证 extract_patterns_from_report 被调用（提取动作仍在 write_report）
+        mock_style.extract_patterns_from_report.assert_called_once()
+        # 验证 good_patterns_json 写入 state
+        assert "good_patterns_json" in result
 
     @patch("ai_trending.crew.report_writing.style_memory.StyleMemory")
     @patch("ai_trending.crew.report_writing.topic_tracker.TopicTracker")

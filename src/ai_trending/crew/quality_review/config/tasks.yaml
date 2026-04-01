@@ -2,54 +2,61 @@ quality_review_task:
   description: >
     当前日期: {current_date}
 
+    # 权威数据来源（事实核对基准）
+
+    {fact_check_source}
+
+    ---
+
     # 待审核日报内容
 
     {report_content}
 
     ---
 
-    # 评分源数据（用于交叉比对）
-
-    {scoring_summary}
-
-    ---
-
     # 审核要求
 
-    请对上方日报内容执行以下四项检查，严格按检查项逐一完成：
+    请对上方日报执行以下五项检查，逐一完成：
 
-    ## 1. 虚构数据检查（severity: error）
-    - 日报中出现的百分比、金额、统计数字（如"占 30%"、"融资 X 亿"），在评分源数据中是否有依据
-    - 日报中引用的项目星数、增长数字，是否与源数据一致
-    - 如果源数据中没有该数字的依据，标记为 error
+    ## 1. 事实核对检查（severity: error）— 新增核心检查
+    对照"权威数据来源"，检查日报中所有数字的准确性：
+    - 日报中出现的 ⭐ 星数，是否与权威来源中的对应项目一致（允许 ±5% 误差）
+    - 日报中出现的"（+N）"增长数字，是否与权威来源一致
+    - 日报中出现的"发布仅 N 天/周/月"，权威来源中是否有时间依据
+    - 日报中出现的百分比（如"高出 40%"），权威来源中是否有对应描述
+    - 如发现数字与来源不符，标记 error，注明正确数字
 
-    ## 2. 事实一致性检查（severity: error/warning）
-    - 项目名称、URL 是否正确
-    - 新闻标题和来源是否与源数据匹配
-    - 描述内容是否与源数据矛盾
+    ## 2. 虚构数据检查（severity: error）
+    - 日报中引用的统计数字（融资金额、用户量等），在权威来源中是否有依据
+    - 无来源的数字标记为"疑似 LLM 虚构"，severity: error
 
-    ## 3. 风格合规检查（severity: warning）
+    ## 3. 事实一致性检查（severity: warning）
+    - 项目名称是否与权威来源一致（不得自行缩写或改名）
+    - 新闻标题和来源是否与权威来源匹配
+    - 描述内容是否与权威来源矛盾
+
+    ## 4. 风格合规检查（severity: warning）
     - 是否使用了禁用词：重磅、震撼、颠覆、革命性、划时代、里程碑、历史性、
       强烈推荐、必看、不容错过、太强了、绝了、牛逼、未来已来、新时代、
       重新定义、拓展新边界、具有重要意义
     - 是否有感叹号（!或！）
     - 是否有"相当于……的……版"句式
-    - 是否有营销腔调、过度渲染
 
-    ## 4. 结构完整性检查（severity: warning）
-    - 五大必要 Section 是否齐全：今日头条、GitHub 热点项目、AI 热点新闻、趋势洞察、本周行动建议
-    - 今日信号强度标签是否存在（🔴/🟡/🟢 三选一）
-    - 新闻可信度标签是否存在（🟢 一手信源/🟡 社区讨论/🔴 待验证）
+    ## 5. 结构完整性检查（severity: warning）
+    - 五大必要 Section：今日头条、GitHub 热点项目、AI 热点新闻、趋势洞察、本周行动建议
+    - 今日信号强度标签（🔴/🟡/🟢 三选一）
+    - 新闻可信度标签（🟢 一手信源/🟡 社区讨论/🔴 待验证）
 
     # 输出要求
     - passed: 无 error 级问题即为 true
     - 每个问题需明确 severity、location（Section 名）、description、suggestion
+    - 事实核对问题在 description 中注明：日报数字 vs 来源数字
     - overall_assessment: 一句话总结日报质量
-    - suggestions: 通用改进建议（不针对特定 Section）
 
   expected_output: >
     返回一个符合 QualityReviewResult 模型的结构化结果，
     包含 passed、overall_assessment、issues 和 suggestions 字段。
     issues 中每个 QualityIssue 包含 severity、location、description、suggestion。
     无 error 级问题时 passed 为 true。
+    事实核对问题的 description 格式：「日报写 X，来源数据为 Y」。
   agent: quality_reviewer

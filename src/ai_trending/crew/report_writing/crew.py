@@ -407,14 +407,11 @@ class ReportWritingCrew:
         try:
             result = self.crew().kickoff(
                 inputs={
-                    "github_data": github_data or "无可用数据",
-                    "news_data": news_data or "无可用数据",
-                    "scoring_result": scoring_result or "{}",
                     "current_date": current_date,
                     "previous_report_context": previous_report_context
                     or "（无上期数据，请省略「上期回顾」Section）",
                     "writing_brief": writing_brief
-                    or "（无写作简报，请直接从 scoring_result JSON 中提取信息）",
+                    or "（无写作简报，请根据编辑决策自行组织内容）",
                     "editorial_plan": editorial_plan
                     or "（无编辑决策，请自行判断信号强度、头条选择和写作角度）",
                     "style_guidance": style_guidance

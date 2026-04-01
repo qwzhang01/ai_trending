@@ -221,7 +221,7 @@ class TestFormatForPrompt:
         assert "AI 研究者" in text
         assert "推理框架" in text
         assert "痛点切入" in text
-        assert "请直接使用这些素材" in text
+        assert "请直接使用上方的钩子" in text  # OPT-001 精简后的文案
 
     def test_repos_without_growth(self):
         """stars_growth_7d 为 None 时不显示增长信息。"""
@@ -255,8 +255,9 @@ class TestFormatForPrompt:
         assert "推理成本暴降" in text
         assert "🟢 一手信源" in text
         assert "大厂动态" in text
-        assert "推理速度提升 10 倍" in text
-        assert "请直接使用 so_what_analysis" in text
+        # content_excerpt 已从 format_for_prompt 中移除（OPT-001 精简噪音字段）
+        assert "推理速度提升 10 倍" not in text
+        assert "请直接使用上方 So What 分析" in text  # OPT-001 精简后的文案
 
     def test_trend_section_formatted(self):
         """趋势判断相关字段应出现在输出中。"""

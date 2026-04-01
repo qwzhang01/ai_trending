@@ -115,13 +115,15 @@ class WritingBrief(BaseModel):
     )
 
     def format_for_prompt(self) -> str:
-        """将 WritingBrief 格式化为 Prompt 可读的文本。
+        """将 WritingBrief 格式化为高信噪比的 Prompt 文本。
 
-        供 write_report_node 注入到 ReportWritingCrew 的 kickoff inputs 中。
+        原则：只输出写作层真正需要的核心素材，去掉 url、language、
+        content_excerpt 等低价值字段，降低 LLM 注意力稀释。
+        目标：输出控制在 ~2000 tokens 以内。
         """
         lines: list[str] = []
 
-        # 编辑决策
+        # 编辑决策摘要（信号强度 + 头条建议）
         signal_map = {
             "red": "🔴 重大变化日",
             "yellow": "🟡 常规更新日",
@@ -137,7 +139,7 @@ class WritingBrief(BaseModel):
             lines.append(f"**头条故事钩子**: {self.headline_story_hook}")
         lines.append("")
 
-        # GitHub 项目简报
+        # GitHub 项目简报（只保留核心写作素材，去掉 url/language/content_excerpt）
         if self.top_repos:
             lines.append("### 推荐 GitHub 项目")
             for i, repo in enumerate(self.top_repos, 1):
@@ -146,66 +148,59 @@ class WritingBrief(BaseModel):
                     if repo.stars_growth_7d is not None
                     else ""
                 )
-                lines.append(
-                    f"\n**{i}. [{repo.name}]({repo.url})** "
-                    f"⭐ {repo.stars}{growth} | {repo.language}"
-                )
+                # 去掉 url 和 language：写作层只需名称和数据，url 发布层才用
+                lines.append(f"\n**{i}. {repo.name}** ⭐ {repo.stars}{growth}")
                 if repo.one_line_reason:
-                    lines.append(f"  - 入选理由: {repo.one_line_reason}")
+                    lines.append(f"  入选: {repo.one_line_reason}")
                 if repo.story_hook:
-                    lines.append(f"  - 故事钩子: {repo.story_hook}")
+                    lines.append(f"  钩子: {repo.story_hook}")
                 if repo.technical_detail:
-                    lines.append(f"  - 技术亮点: {repo.technical_detail}")
+                    lines.append(f"  技术: {repo.technical_detail}")
                 if repo.target_audience:
-                    lines.append(f"  - 目标读者: {repo.target_audience}")
+                    lines.append(f"  受众: {repo.target_audience}")
+                # readme_summary 截断到 100 字，避免太长
                 if repo.readme_summary:
-                    lines.append(f"  - README 摘要: {repo.readme_summary}")
+                    summary = repo.readme_summary[:100].rstrip()
+                    lines.append(f"  README: {summary}…" if len(repo.readme_summary) > 100 else f"  README: {summary}")
                 if repo.suggested_angle:
-                    lines.append(f"  - 建议切入角度: {repo.suggested_angle}")
+                    lines.append(f"  角度: {repo.suggested_angle}")
             lines.append("")
             lines.append(
-                "每个项目已提供：story_hook（开篇钩子）、technical_detail（技术亮点）、"
-                "target_audience（目标读者）。请直接使用这些素材，不要重新编造。"
+                "请直接使用上方的钩子/技术/受众素材写作，不要编造新的数字或描述。"
             )
             lines.append("")
 
-        # 新闻简报
+        # 新闻简报（去掉 url 和 content_excerpt，只保留标题+来源+标签+so_what）
         if self.top_news:
             lines.append("### 推荐新闻")
             for i, news in enumerate(self.top_news, 1):
-                lines.append(
-                    f"\n**{i}. {news.title}**"
-                )
-                lines.append(f"  - 来源: {news.source} | {news.url}")
-                if news.credibility_label:
-                    lines.append(f"  - 可信度: {news.credibility_label}")
-                if news.category:
-                    lines.append(f"  - 类别: {news.category}")
+                label = f"[{news.credibility_label}]" if news.credibility_label else ""
+                cat = f"[{news.category}]" if news.category else ""
+                lines.append(f"\n**{i}.** {label}{cat} {news.title}")
+                lines.append(f"  来源: {news.source}")
                 if news.so_what_analysis:
-                    lines.append(f"  - So What 分析: {news.so_what_analysis}")
-                if news.content_excerpt:
-                    lines.append(f"  - 内容摘要: {news.content_excerpt}")
+                    lines.append(f"  So What: {news.so_what_analysis}")
             lines.append("")
             lines.append(
-                "每条新闻已提供：so_what_analysis（深层分析）、credibility_label（可信度）。"
-                "请直接使用 so_what_analysis 的判断，不要替换为泛泛之谈。"
+                "新闻请直接使用上方 So What 分析，不要替换为泛泛之谈。"
             )
             lines.append("")
 
         # 趋势判断
-        lines.append("### 趋势判断")
+        trend_parts: list[str] = []
         if self.trend_summary:
-            lines.append(f"**趋势总结**: {self.trend_summary}")
+            trend_parts.append(f"主趋势: {self.trend_summary}")
         if self.causal_explanation:
-            lines.append(f"**因果解释**: {self.causal_explanation}")
+            trend_parts.append(f"因果: {self.causal_explanation}")
         if self.data_support:
-            lines.append(f"**数据支撑**: {self.data_support}")
+            trend_parts.append(f"数据: {self.data_support}")
         if self.forward_looking:
-            lines.append(f"**前瞻预判**: {self.forward_looking}")
+            trend_parts.append(f"前瞻: {self.forward_looking}")
         if self.hot_directions:
-            lines.append(
-                f"**热点方向**: {' / '.join(self.hot_directions)}"
-            )
+            trend_parts.append(f"热点方向: {' / '.join(self.hot_directions)}")
+        if trend_parts:
+            lines.append("### 趋势判断")
+            lines.extend(trend_parts)
 
         return "\n".join(lines)
 

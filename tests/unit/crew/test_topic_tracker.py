@@ -295,7 +295,9 @@ class TestEditorialPlanningNodeWithTopicContext:
     @patch("ai_trending.crew.report_writing.topic_tracker.TopicTracker")
     @patch("ai_trending.crew.editorial_planning.EditorialPlanningCrew")
     def test_topic_context_passed_to_crew(self, MockCrew, MockTracker):
-        """话题上下文应传递给 EditorialPlanningCrew.run()。"""
+        """OPT-003: topic_context 不再推送到 Crew，Agent 通过工具主动查询。
+        验证 EditorialPlanningCrew.run() 被正常调用（不含 topic_context 断言）。
+        """
         from ai_trending.nodes import editorial_planning_node
         from ai_trending.crew.editorial_planning.models import (
             EditorialPlan,
@@ -314,10 +316,11 @@ class TestEditorialPlanningNodeWithTopicContext:
         state = {"current_date": "2026-04-01", "scoring_result": "{}"}
         result = editorial_planning_node(state)
 
-        # 验证 topic_context 被传递给 Crew
+        # OPT-003: 验证 Crew.run() 被调用（topic_context 由 Agent 工具主动查询）
+        mock_crew_instance.run.assert_called_once()
         call_kwargs = mock_crew_instance.run.call_args
-        assert "topic_context" in call_kwargs.kwargs
-        assert "近期话题追踪" in call_kwargs.kwargs["topic_context"]
+        assert "scoring_result" in call_kwargs.kwargs
+        assert "editorial_plan" in result
 
     @patch("ai_trending.crew.report_writing.topic_tracker.TopicTracker")
     @patch("ai_trending.crew.editorial_planning.EditorialPlanningCrew")

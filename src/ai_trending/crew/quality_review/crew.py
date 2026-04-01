@@ -72,6 +72,7 @@ class QualityReviewCrew:
         report_content: str = "",
         scoring_result: str = "",
         current_date: str = "",
+        writing_brief: str = "",
     ) -> tuple[QualityReviewResult, dict[str, int]]:
         """执行质量审核。
 
@@ -79,12 +80,16 @@ class QualityReviewCrew:
             report_content: 待审核的日报 Markdown 内容
             scoring_result: TrendScoringOutput 的 JSON 字符串（用于交叉比对）
             current_date:   当前日期
+            writing_brief:  WritingBrief 文本（事实核对的权威数字来源）
 
         Returns:
             (QualityReviewResult, token_usage) 元组
         """
         # 从评分 JSON 中提取摘要供 Agent 比对
         scoring_summary = self._build_scoring_summary(scoring_result)
+
+        # 从 WritingBrief 提取事实核对基准（真实数字来源）
+        fact_check_source = self._build_fact_check_source(writing_brief, scoring_summary)
 
         log.info(f"[QualityReviewCrew] 开始质量审核 ({current_date})")
 
@@ -100,6 +105,7 @@ class QualityReviewCrew:
                 inputs={
                     "report_content": report_content,
                     "scoring_summary": scoring_summary,
+                    "fact_check_source": fact_check_source,
                     "current_date": current_date,
                 }
             )
@@ -163,6 +169,32 @@ class QualityReviewCrew:
                 lines.append(f"- 热点方向: {', '.join(summary['hot_directions'])}")
 
         return "\n".join(lines) if lines else "评分源数据为空"
+
+    def _build_fact_check_source(self, writing_brief: str, scoring_summary: str) -> str:
+        """构建事实核对的权威数字来源。
+
+        WritingBrief 是已经过处理的精简版本，包含了真实的星数、增长数字等，
+        是日报中数字的唯一合法来源。
+
+        Args:
+            writing_brief:   WritingBrief.format_for_prompt() 输出的文本
+            scoring_summary: 评分摘要（WritingBrief 不可用时的备用）
+
+        Returns:
+            供 Agent 核对的权威数字来源文本
+        """
+        if writing_brief and writing_brief not in (
+            "（无写作简报，请根据编辑决策自行组织内容）",
+        ):
+            # WritingBrief 可用时，优先使用（已经过精简，信噪比更高）
+            lines = [
+                "以下是本次日报的**权威数据来源**，日报中的所有数字必须与此一致：",
+                "",
+                writing_brief[:2000],  # 截断避免过长
+            ]
+            return "\n".join(lines)
+        # 降级到评分摘要
+        return f"以下是评分源数据（权威数字来源）：\n\n{scoring_summary}"
 
     @staticmethod
     def _extract_review(result: Any) -> QualityReviewResult:

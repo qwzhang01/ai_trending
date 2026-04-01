@@ -7,13 +7,17 @@
   - 生成 Kill List（排除低价值内容）
   - 拟定"今日一句话"
 
-输入 inputs: {"scoring_summary": str, "current_date": str, "topic_context": str}
+工具调用模式（Claude Code 启发）：
+  Agent 主动调用工具查询上下文，而非被动接收全量推送。
+
+输入 inputs: {"scoring_summary": str, "current_date": str}
 输出 pydantic: EditorialPlan
 """
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from crewai import Agent, Crew, Process, Task
@@ -31,11 +35,12 @@ log = get_logger("editorial_planning")
 
 @CrewBase
 class EditorialPlanningCrew:
-    """编辑部选题规划 Crew — 在评分层和写作层之间做编辑决策。
+    """编辑部选题规划 Crew — Agent 主动调用工具查询上下文，做编辑决策。
 
-    使用 light 档 LLM，因为编辑决策本质是分类任务。
+    使用 light 档 LLM，编辑决策本质是分类任务。
+    Agent 配备 3 个按需查询工具（Claude Code 启发模式）。
 
-    输入 inputs: {"scoring_summary": str, "current_date": str, "topic_context": str}
+    输入 inputs: {"scoring_summary": str, "current_date": str}
     输出 pydantic: EditorialPlan
     """
 
@@ -44,13 +49,44 @@ class EditorialPlanningCrew:
 
     @agent
     def editorial_planner(self) -> Agent:
-        """编辑策划 Agent — 做选题和角度决策。"""
+        """编辑策划 Agent — 做选题和角度决策，主动调用工具查询历史上下文。"""
         return Agent(
             config=self.agents_config["editorial_planner"],  # type: ignore[index]
-            llm=build_crewai_llm("light"),  # 编辑决策是分类任务，light 档足够
+            llm=build_crewai_llm("light"),
+            tools=self._build_tools(),
             allow_delegation=False,
             verbose=False,
         )
+
+    def _build_tools(self) -> list:
+        """构建按需查询工具列表。工具初始化失败时静默降级。"""
+        from ai_trending.crew.editorial_planning.tools import (
+            make_search_prev_reports_tool,
+            make_style_guidance_tool,
+            make_topic_history_tool,
+        )
+
+        tools = []
+        reports_dir = Path.cwd() / "reports"
+
+        try:
+            from ai_trending.crew.report_writing.topic_tracker import TopicTracker
+            tools.append(make_topic_history_tool(TopicTracker().get_topic_context))
+        except Exception as e:
+            log.warning(f"[editorial_planning] 话题历史工具初始化失败: {e}")
+
+        try:
+            from ai_trending.crew.report_writing.style_memory import StyleMemory
+            tools.append(make_style_guidance_tool(StyleMemory().get_style_guidance))
+        except Exception as e:
+            log.warning(f"[editorial_planning] 风格记忆工具初始化失败: {e}")
+
+        try:
+            tools.append(make_search_prev_reports_tool(reports_dir))
+        except Exception as e:
+            log.warning(f"[editorial_planning] 历史日报搜索工具初始化失败: {e}")
+
+        return tools
 
     @task
     def plan_editorial_task(self) -> Task:
@@ -74,21 +110,19 @@ class EditorialPlanningCrew:
         self,
         scoring_result: str = "",
         current_date: str = "",
-        topic_context: str = "",
+        topic_context: str = "",  # 保留参数兼容性，不再推送到 Prompt，Agent 自行调用工具
     ) -> tuple[EditorialPlan, dict[str, int]]:
         """执行编辑部选题规划。
 
         Args:
             scoring_result: TrendScoringOutput 的 JSON 字符串
             current_date:   当前日期
-            topic_context:  近期话题追踪上下文（由 TopicTracker 提供）
+            topic_context:  保留参数（兼容旧调用），Agent 现在通过工具主动查询话题
 
         Returns:
             (EditorialPlan, token_usage) 元组
         """
-        # 从评分 JSON 中提取摘要信息供 Agent 参考
         scoring_summary = self._build_scoring_summary(scoring_result)
-
         log.info(f"[EditorialPlanningCrew] 开始编辑选题规划 ({current_date})")
 
         try:
@@ -96,7 +130,7 @@ class EditorialPlanningCrew:
                 inputs={
                     "scoring_summary": scoring_summary,
                     "current_date": current_date,
-                    "topic_context": topic_context or "（无近期话题追踪记录）",
+                    # topic_context 不再推送到 Prompt，Agent 通过工具主动获取
                 }
             )
 
