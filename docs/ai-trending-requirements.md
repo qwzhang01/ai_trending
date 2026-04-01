@@ -9,9 +9,6 @@ analyzer: "doc-code2req v5.0 + 人工质量审查"
 
 # AI Trending — 需求文档
 
-> 📄 本文档基于代码逆向推导生成，结合 2026-04-01 日报质量专项审查结果更新。
-> 标注 `[规划中]` 的条目为待实施功能，详见 [improvement-tasks.md](./improvement-tasks.md)。
-
 ---
 
 ## 1. 项目概览
@@ -914,5 +911,3 @@ Phase 3（Week 6-7）: 记忆系统
 | 2026-04-01 | 新增 FR-005（编辑策划）、FR-007（质量审核）、FR-009（话题追踪）、FR-010（风格记忆）；新增 NFR-005（内容质量）；更新数据模型增加 RichRepoData/RichNewsData/WritingBrief；更新技术债务为流水线级质量问题 5 项 + 代码级 7 项；修正 GitHubTrendingOrchestrator 行数为 374 行 |
 
 ---
-
-*本文档持续更新，`[规划中]` 标注的功能实施后将更新为正式状态。*

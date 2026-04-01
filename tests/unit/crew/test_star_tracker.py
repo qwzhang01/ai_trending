@@ -12,14 +12,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from ai_trending.crew.github_trending.models import RepoCandidate
 from ai_trending.crew.github_trending.star_tracker import StarTracker
-
 
 # ── Fixtures ──────────────────────────────────────────────────
 
@@ -206,9 +204,7 @@ class TestGetGrowth:
         snapshot_path = tracker.snapshot_dir / f"{date_3d_ago}.json"
         snapshot_path.write_text(json.dumps({"owner/repo": 900}))
 
-        stars_ago, growth = tracker.get_growth(
-            "owner/repo", current_stars=1200, days=3
-        )
+        stars_ago, growth = tracker.get_growth("owner/repo", current_stars=1200, days=3)
 
         assert stars_ago == 900
         assert growth == 300
@@ -220,9 +216,7 @@ class TestGetGrowth:
 class TestEnrichCandidates:
     """测试批量填充星数增长数据。"""
 
-    def test_enriches_all_with_history(
-        self, tracker_with_history, sample_candidates
-    ):
+    def test_enriches_all_with_history(self, tracker_with_history, sample_candidates):
         """有完整历史数据时，应为所有候选仓库填充增长数据。"""
         filled = tracker_with_history.enrich_candidates(sample_candidates)
 

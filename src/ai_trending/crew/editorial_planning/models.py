@@ -70,7 +70,11 @@ class EditorialPlan(BaseModel):
 
     def format_for_prompt(self) -> str:
         """将编辑决策格式化为可注入到 Prompt 中的文本。"""
-        signal_emoji = {"red": "🔴 重大变化日", "yellow": "🟡 常规更新日", "green": "🟢 平静日"}
+        signal_emoji = {
+            "red": "🔴 重大变化日",
+            "yellow": "🟡 常规更新日",
+            "green": "🟢 平静日",
+        }
         signal_display = signal_emoji.get(self.signal_strength, "🟡 常规更新日")
 
         lines = [

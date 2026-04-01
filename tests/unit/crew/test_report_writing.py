@@ -269,7 +269,9 @@ class TestReportWritingCrew:
         assert isinstance(output, ReportOutput)
         assert len(output.content) > 0
 
-    def test_run_with_empty_editorial_plan(self, mock_llm, mock_crew_kickoff_with_report):
+    def test_run_with_empty_editorial_plan(
+        self, mock_llm, mock_crew_kickoff_with_report
+    ):
         """editorial_plan 为空时，run() 应正常工作（兼容旧调用方式）。"""
         crew = ReportWritingCrew()
         result = crew.run(

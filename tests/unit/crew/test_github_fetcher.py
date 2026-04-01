@@ -16,7 +16,6 @@ import pytest
 from ai_trending.crew.github_trending.fetchers import GitHubFetcher
 from ai_trending.crew.github_trending.models import RepoCandidate
 
-
 # ── Fixtures ──────────────────────────────────────────────────
 
 
@@ -53,7 +52,7 @@ class TestCleanReadme:
 
     def test_removes_badge_images(self):
         """应移除带链接的 badge 图片 [![alt](img)](link)。"""
-        raw = '[![Build Status](https://img.shields.io/badge.svg)](https://ci.example.com)\nHello World'
+        raw = "[![Build Status](https://img.shields.io/badge.svg)](https://ci.example.com)\nHello World"
         result = GitHubFetcher._clean_readme(raw)
         assert "Build Status" not in result
         assert "img.shields.io" not in result
@@ -106,8 +105,8 @@ class TestCleanReadme:
     def test_mixed_noise(self):
         """综合测试：badge + 图片 + HTML + 链接 + 标题标记同时出现。"""
         raw = (
-            '[![CI](https://badge.svg)](https://ci.com)\n'
-            '![Logo](https://logo.png)\n'
+            "[![CI](https://badge.svg)](https://ci.com)\n"
+            "![Logo](https://logo.png)\n"
             '<p align="center">Centered text</p>\n'
             "## About\n"
             "This is [a cool project](https://github.com/foo).\n"

@@ -85,8 +85,7 @@ def enrich_empty_summaries(
         成功填充的条目数
     """
     empty_items = [
-        item for item in items
-        if not item.get("summary") and item.get("url")
+        item for item in items if not item.get("summary") and item.get("url")
     ]
 
     if not empty_items:
@@ -114,7 +113,5 @@ def enrich_empty_summaries(
                     f"{type(e).__name__}: {e}"
                 )
 
-    log.info(
-        f"正文摘要补充完成: {filled}/{len(to_process)} 条成功填充"
-    )
+    log.info(f"正文摘要补充完成: {filled}/{len(to_process)} 条成功填充")
     return filled

@@ -75,7 +75,7 @@ class StarTracker:
 
         snapshot: dict[str, int] = {}
         for repo in repos:
-            full_name = repo.get("full_name", "")
+            full_name = str(repo.get("full_name", ""))
             stars = repo.get("stars", 0)
             if full_name and isinstance(stars, int):
                 snapshot[full_name] = stars
@@ -156,9 +156,7 @@ class StarTracker:
                 f"星数增长数据填充完成: {filled}/{len(candidates)} 个仓库有历史数据"
             )
         else:
-            log.info(
-                f"无 {days} 天前的历史快照，stars_growth_7d 保持 None"
-            )
+            log.info(f"无 {days} 天前的历史快照，stars_growth_7d 保持 None")
         return filled
 
     def cleanup_old_snapshots(self, keep_days: int = _KEEP_DAYS) -> int:
@@ -173,9 +171,7 @@ class StarTracker:
         if not self._snapshot_dir.exists():
             return 0
 
-        cutoff_date = (datetime.now() - timedelta(days=keep_days)).strftime(
-            "%Y-%m-%d"
-        )
+        cutoff_date = (datetime.now() - timedelta(days=keep_days)).strftime("%Y-%m-%d")
         removed = 0
 
         for path in sorted(self._snapshot_dir.glob("*.json")):

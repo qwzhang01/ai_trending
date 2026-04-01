@@ -17,7 +17,6 @@ from ai_trending.crew.github_trending.models import (
 )
 from ai_trending.crew.new_collect.models import RichNewsData
 
-
 # =========================================================================
 # RichRepoData 测试
 # =========================================================================
@@ -98,9 +97,9 @@ class TestRichRepoDataDescriptions:
     def test_all_fields_have_description(self):
         """RichRepoData 的每个字段都应有 description。"""
         for name, field_info in RichRepoData.model_fields.items():
-            assert field_info.description is not None and len(field_info.description) > 0, (
-                f"字段 '{name}' 缺少 description"
-            )
+            assert (
+                field_info.description is not None and len(field_info.description) > 0
+            ), f"字段 '{name}' 缺少 description"
 
 
 class TestRichRepoDataFromCandidate:
@@ -224,9 +223,9 @@ class TestRichNewsDataDescriptions:
     def test_all_fields_have_description(self):
         """RichNewsData 的每个字段都应有 description。"""
         for name, field_info in RichNewsData.model_fields.items():
-            assert field_info.description is not None and len(field_info.description) > 0, (
-                f"字段 '{name}' 缺少 description"
-            )
+            assert (
+                field_info.description is not None and len(field_info.description) > 0
+            ), f"字段 '{name}' 缺少 description"
 
 
 class TestRichNewsDataFromDict:
@@ -313,4 +312,6 @@ class TestRichNewsDataBackwardCompat:
         )
         data = news.model_dump()
         # 所有 fetcher 标准字段都应在输出中
-        assert all(k in data for k in ["title", "url", "score", "source", "summary", "time"])
+        assert all(
+            k in data for k in ["title", "url", "score", "source", "summary", "time"]
+        )

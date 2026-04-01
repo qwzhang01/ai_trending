@@ -98,16 +98,10 @@ class RichRepoData(BaseModel):
     description: str = Field(default="", description="仓库简介")
     language: str = Field(default="未知", description="主要编程语言")
     stars: int = Field(default=0, description="当前 Star 总数")
-    topics: list[str] = Field(
-        default_factory=list, description="仓库标签列表"
-    )
+    topics: list[str] = Field(default_factory=list, description="仓库标签列表")
     html_url: str = Field(default="", description="仓库 GitHub 页面 URL")
-    created_at: str = Field(
-        default="", description="仓库创建日期，格式 YYYY-MM-DD"
-    )
-    updated_at: str = Field(
-        default="", description="最后更新日期，格式 YYYY-MM-DD"
-    )
+    created_at: str = Field(default="", description="仓库创建日期，格式 YYYY-MM-DD")
+    updated_at: str = Field(default="", description="最后更新日期，格式 YYYY-MM-DD")
 
     # --- 趋势增长（来自 TASK-002 StarTracker）---
     stars_7d_ago: int | None = Field(
@@ -130,7 +124,7 @@ class RichRepoData(BaseModel):
     )
 
     @classmethod
-    def from_candidate(cls, candidate: RepoCandidate) -> "RichRepoData":
+    def from_candidate(cls, candidate: RepoCandidate) -> RichRepoData:
         """从 RepoCandidate 构建 RichRepoData，自动映射共有字段。"""
         return cls(
             full_name=candidate.full_name,

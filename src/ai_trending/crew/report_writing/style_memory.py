@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import re
-from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -55,7 +54,7 @@ class QualityRecord:
         )
 
     @staticmethod
-    def from_table_row(row: str) -> "QualityRecord | None":
+    def from_table_row(row: str) -> QualityRecord | None:
         """从 Markdown 表格行解析。"""
         raw_parts = row.split("|")
         # 去掉首尾空元素
@@ -78,9 +77,9 @@ class QualityRecord:
             return None
         # 解析主要问题
         issues_str = parts[2] if len(parts) > 2 else ""
-        issues = (
-            [i.strip() for i in issues_str.split(";") if i.strip() and i.strip() != "无"]
-        )
+        issues = [
+            i.strip() for i in issues_str.split(";") if i.strip() and i.strip() != "无"
+        ]
         return QualityRecord(
             date=parts[0],
             passed_count=passed,
@@ -232,9 +231,7 @@ class StyleMemory:
 
         return repeated
 
-    def extract_patterns_from_report(
-        self, content: str
-    ) -> tuple[list[str], list[str]]:
+    def extract_patterns_from_report(self, content: str) -> tuple[list[str], list[str]]:
         """从日报内容中提取好/坏表达模式。
 
         好表达：使用了具体数据、时间窗口、场景锚定等高质量叙事技巧。

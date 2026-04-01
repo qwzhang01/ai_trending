@@ -10,18 +10,13 @@
   - write_report_node 记录今日话题
 """
 
-import json
 from datetime import datetime, timedelta
-from pathlib import Path
-
-import pytest
 from unittest.mock import MagicMock, patch
 
 from ai_trending.crew.report_writing.topic_tracker import (
     TopicRecord,
     TopicTracker,
 )
-
 
 # =========================================================================
 # TopicRecord 测试
@@ -56,11 +51,17 @@ class TestTopicRecord:
 
     def test_from_table_row_header(self):
         """表头行应返回 None。"""
-        assert TopicRecord.from_table_row("| 日期 | 头条话题 | 覆盖关键词 | 今日一句话 |") is None
+        assert (
+            TopicRecord.from_table_row("| 日期 | 头条话题 | 覆盖关键词 | 今日一句话 |")
+            is None
+        )
 
     def test_from_table_row_separator(self):
         """分隔行应返回 None。"""
-        assert TopicRecord.from_table_row("|------|---------|-----------|-----------|") is None
+        assert (
+            TopicRecord.from_table_row("|------|---------|-----------|-----------|")
+            is None
+        )
 
     def test_from_table_row_insufficient_columns(self):
         """列数不足时返回 None。"""
@@ -68,7 +69,9 @@ class TestTopicRecord:
 
     def test_empty_keywords(self):
         """空关键词时正常序列化。"""
-        record = TopicRecord(date="2026-03-31", headline="test", keywords=[], hook="hook")
+        record = TopicRecord(
+            date="2026-03-31", headline="test", keywords=[], hook="hook"
+        )
         row = record.to_table_row()
         assert "2026-03-31" in row
 
@@ -172,7 +175,9 @@ class TestKillList:
         today = datetime.now()
         for i in range(2):
             d = (today - timedelta(days=i)).strftime("%Y-%m-%d")
-            tracker.record_today(date=d, headline=f"Day{i}", keywords=["MCP", "Agent"], hook="")
+            tracker.record_today(
+                date=d, headline=f"Day{i}", keywords=["MCP", "Agent"], hook=""
+            )
 
         kill_list = tracker.get_kill_list()
         assert len(kill_list) > 0
@@ -185,7 +190,9 @@ class TestKillList:
         tracker = TopicTracker(tracker_path=tracker_path)
 
         today = datetime.now().strftime("%Y-%m-%d")
-        tracker.record_today(date=today, headline="UniqueHeadline", keywords=[], hook="")
+        tracker.record_today(
+            date=today, headline="UniqueHeadline", keywords=[], hook=""
+        )
 
         kill_list = tracker.get_kill_list()
         assert any("UniqueHeadline" in item for item in kill_list)
@@ -298,14 +305,15 @@ class TestEditorialPlanningNodeWithTopicContext:
         """OPT-003: topic_context 不再推送到 Crew，Agent 通过工具主动查询。
         验证 EditorialPlanningCrew.run() 被正常调用（不含 topic_context 断言）。
         """
-        from ai_trending.nodes import editorial_planning_node
         from ai_trending.crew.editorial_planning.models import (
             EditorialPlan,
-            HeadlineDecision,
         )
+        from ai_trending.nodes import editorial_planning_node
 
         mock_tracker_instance = MagicMock()
-        mock_tracker_instance.get_topic_context.return_value = "## 近期话题追踪\n测试数据"
+        mock_tracker_instance.get_topic_context.return_value = (
+            "## 近期话题追踪\n测试数据"
+        )
         MockTracker.return_value = mock_tracker_instance
 
         mock_plan = EditorialPlan(signal_strength="yellow", today_hook="测试")
@@ -326,8 +334,8 @@ class TestEditorialPlanningNodeWithTopicContext:
     @patch("ai_trending.crew.editorial_planning.EditorialPlanningCrew")
     def test_topic_tracker_failure_does_not_block(self, MockCrew, MockTracker):
         """TopicTracker 失败时不阻断编辑规划。"""
-        from ai_trending.nodes import editorial_planning_node
         from ai_trending.crew.editorial_planning.models import EditorialPlan
+        from ai_trending.nodes import editorial_planning_node
 
         MockTracker.return_value.get_topic_context.side_effect = Exception("读取失败")
 
@@ -357,7 +365,9 @@ class TestWriteReportNodeTopicRecording:
     @patch("ai_trending.crew.report_writing.topic_tracker.TopicTracker")
     @patch("ai_trending.crew.report_writing.ReportWritingCrew")
     @patch("ai_trending.crew.report_writing.tracker.PreviousReportTracker")
-    def test_topic_recorded_after_report(self, MockPrevTracker, MockCrew, MockTopicTracker):
+    def test_topic_recorded_after_report(
+        self, MockPrevTracker, MockCrew, MockTopicTracker
+    ):
         """报告生成后应调用 TopicTracker.record_today。"""
         from ai_trending.nodes import write_report_node
 
@@ -393,7 +403,9 @@ class TestWriteReportNodeTopicRecording:
     @patch("ai_trending.crew.report_writing.topic_tracker.TopicTracker")
     @patch("ai_trending.crew.report_writing.ReportWritingCrew")
     @patch("ai_trending.crew.report_writing.tracker.PreviousReportTracker")
-    def test_topic_tracker_failure_does_not_block_report(self, MockPrevTracker, MockCrew, MockTopicTracker):
+    def test_topic_tracker_failure_does_not_block_report(
+        self, MockPrevTracker, MockCrew, MockTopicTracker
+    ):
         """TopicTracker 记录失败不影响报告发布。"""
         from ai_trending.nodes import write_report_node
 

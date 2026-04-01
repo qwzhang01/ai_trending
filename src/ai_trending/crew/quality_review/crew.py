@@ -89,7 +89,9 @@ class QualityReviewCrew:
         scoring_summary = self._build_scoring_summary(scoring_result)
 
         # 从 WritingBrief 提取事实核对基准（真实数字来源）
-        fact_check_source = self._build_fact_check_source(writing_brief, scoring_summary)
+        fact_check_source = self._build_fact_check_source(
+            writing_brief, scoring_summary
+        )
 
         log.info(f"[QualityReviewCrew] 开始质量审核 ({current_date})")
 
@@ -147,9 +149,7 @@ class QualityReviewCrew:
                 growth = repo.get("stars_growth_7d")
                 language = repo.get("language", "")
                 growth_str = f"（+{growth}）" if growth else ""
-                lines.append(
-                    f"- {name}: ⭐{stars}{growth_str} 语言:{language}"
-                )
+                lines.append(f"- {name}: ⭐{stars}{growth_str} 语言:{language}")
 
         # 新闻数据（标题、来源等关键信息）
         news = data.get("scored_news", [])
@@ -163,7 +163,7 @@ class QualityReviewCrew:
         # 趋势总结
         summary = data.get("daily_summary", {})
         if summary.get("top_trend"):
-            lines.append(f"\n### 趋势数据")
+            lines.append("\n### 趋势数据")
             lines.append(f"- 主趋势: {summary.get('top_trend', '')}")
             if summary.get("hot_directions"):
                 lines.append(f"- 热点方向: {', '.join(summary['hot_directions'])}")

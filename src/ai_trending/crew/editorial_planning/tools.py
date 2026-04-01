@@ -12,8 +12,8 @@ EditorialPlanningCrew 的 Agent 通过这些工具主动获取上下文，
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -83,7 +83,11 @@ def make_topic_history_tool(get_topic_context_fn: Callable[[int], str]) -> BaseT
                 context = get_topic_context_fn(days)
                 if not context or "无近期" in context:
                     return json.dumps(
-                        {"topic_records": [], "kill_list": [], "message": "无近期话题记录"},
+                        {
+                            "topic_records": [],
+                            "kill_list": [],
+                            "message": "无近期话题记录",
+                        },
                         ensure_ascii=False,
                     )
                 return json.dumps(
@@ -92,7 +96,9 @@ def make_topic_history_tool(get_topic_context_fn: Callable[[int], str]) -> BaseT
                 )
             except Exception as e:
                 log.warning(f"[get_topic_history] 查询失败: {e}")
-                return json.dumps({"error": str(e), "topic_records": []}, ensure_ascii=False)
+                return json.dumps(
+                    {"error": str(e), "topic_records": []}, ensure_ascii=False
+                )
 
     return _TopicHistoryTool()
 
@@ -120,7 +126,11 @@ def make_style_guidance_tool(get_style_guidance_fn: Callable[[], str]) -> BaseTo
                 guidance = get_style_guidance_fn()
                 if not guidance or "无风格记忆" in guidance:
                     return json.dumps(
-                        {"guidance": "无风格记忆记录", "good_patterns": [], "bad_patterns": []},
+                        {
+                            "guidance": "无风格记忆记录",
+                            "good_patterns": [],
+                            "bad_patterns": [],
+                        },
                         ensure_ascii=False,
                     )
                 return json.dumps({"guidance": guidance}, ensure_ascii=False)

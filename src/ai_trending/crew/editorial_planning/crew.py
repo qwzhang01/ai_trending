@@ -71,12 +71,14 @@ class EditorialPlanningCrew:
 
         try:
             from ai_trending.crew.report_writing.topic_tracker import TopicTracker
+
             tools.append(make_topic_history_tool(TopicTracker().get_topic_context))
         except Exception as e:
             log.warning(f"[editorial_planning] 话题历史工具初始化失败: {e}")
 
         try:
             from ai_trending.crew.report_writing.style_memory import StyleMemory
+
             tools.append(make_style_guidance_tool(StyleMemory().get_style_guidance))
         except Exception as e:
             log.warning(f"[editorial_planning] 风格记忆工具初始化失败: {e}")
@@ -167,16 +169,14 @@ class EditorialPlanningCrew:
         if repos:
             lines.append(f"### 评分项目（共 {len(repos)} 个）")
             for i, repo in enumerate(repos[:8]):
-                name = repo.get("name", repo.get("repo", f"项目{i+1}"))
+                name = repo.get("name", repo.get("repo", f"项目{i + 1}"))
                 stars = repo.get("stars", 0)
                 growth = repo.get("stars_growth_7d")
                 scores = repo.get("scores", {})
                 overall = scores.get("综合", scores.get("overall", "N/A"))
                 hook = repo.get("story_hook", "")
                 growth_str = f"（+{growth}）" if growth else ""
-                lines.append(
-                    f"- **{name}** ⭐{stars}{growth_str} 综合分:{overall}"
-                )
+                lines.append(f"- **{name}** ⭐{stars}{growth_str} 综合分:{overall}")
                 if hook:
                     lines.append(f"  故事钩子: {hook}")
 
@@ -196,7 +196,7 @@ class EditorialPlanningCrew:
         # 趋势总结
         summary = data.get("daily_summary", {})
         if summary.get("top_trend"):
-            lines.append(f"\n### 趋势总结")
+            lines.append("\n### 趋势总结")
             lines.append(f"- 主趋势: {summary.get('top_trend', '')}")
             if summary.get("hot_directions"):
                 lines.append(f"- 热点方向: {', '.join(summary['hot_directions'])}")

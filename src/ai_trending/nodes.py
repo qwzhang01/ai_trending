@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ai_trending.crew.report_writing.models import WritingBrief
 from ai_trending.logger import get_logger
 
 log = get_logger("nodes")
@@ -105,7 +106,7 @@ def _build_writing_brief(
     scoring_result_json: str,
     github_data: str,
     news_data: str,
-) -> "WritingBrief":
+) -> WritingBrief:
     """从评分 JSON 构建写作简报，显式传递叙事字段给写作层。
 
     Args:
@@ -352,6 +353,7 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
     decision_guidance = ""
     try:
         from ai_trending.crew.report_writing.decision_memory import DecisionMemory
+
         decision_guidance = DecisionMemory().get_decision_guidance()
         if decision_guidance and "无历史" not in decision_guidance:
             log.info("[editorial_planning] 已获取历史编辑决策参考")
@@ -380,7 +382,9 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
         )
         return {
             "editorial_plan": editorial_plan_text,
-            "editorial_plan_raw": plan.model_dump_json() if hasattr(plan, "model_dump_json") else "{}",
+            "editorial_plan_raw": plan.model_dump_json()
+            if hasattr(plan, "model_dump_json")
+            else "{}",
             "decision_guidance": decision_guidance,  # 存入 state 供 quality_review_node 使用
             "token_usage": merged_usage,
         }
@@ -510,6 +514,7 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
         good_patterns_json = "[]"
         try:
             import json as _json
+
             from ai_trending.crew.report_writing.style_memory import StyleMemory
 
             style_mem = StyleMemory()
@@ -597,18 +602,23 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
         # 记录编辑决策结果到 DecisionMemory（失败不阻断）
         try:
             import json as _json
+
             from ai_trending.crew.report_writing.decision_memory import DecisionMemory
 
             plan_raw = state.get("editorial_plan_raw", "{}")
             plan_data = _json.loads(plan_raw) if plan_raw else {}
             signal = plan_data.get("signal_strength", "yellow")
             headline = plan_data.get("headline", {})
-            headline_type = "news" if "新闻" in str(headline.get("chosen_item", "")) else "repo"
+            headline_type = (
+                "news" if "新闻" in str(headline.get("chosen_item", "")) else "repo"
+            )
             repo_angles = plan_data.get("repo_angles", [])
             angle = repo_angles[0].get("angle", "") if repo_angles else ""
             kill_list_size = len(plan_data.get("kill_list", []))
             # 估算通过检查项数（issues 中 error 数越少越好）
-            passed_checks = max(0, 18 - review_result.error_count * 3 - review_result.warning_count)
+            passed_checks = max(
+                0, 18 - review_result.error_count * 3 - review_result.warning_count
+            )
 
             DecisionMemory().record_decision(
                 date=current_date,
@@ -713,14 +723,20 @@ def _record_successful_patterns(state: dict[str, Any]) -> None:
     report_content = state.get("report_content", "")
 
     # 只在质量审核通过（或未审核）的情况下记录好模式
-    quality_failed = quality_review and "未通过" in quality_review and "通过" not in quality_review.replace("未通过", "")
+    quality_failed = (
+        quality_review
+        and "未通过" in quality_review
+        and "通过" not in quality_review.replace("未通过", "")
+    )
 
     if quality_failed:
         log.info("[post_publish] 质量审核未通过，跳过好模式记录")
         return
 
     try:
-        good_patterns: list[str] = _json.loads(good_patterns_json) if good_patterns_json else []
+        good_patterns: list[str] = (
+            _json.loads(good_patterns_json) if good_patterns_json else []
+        )
         bad_patterns: list[str] = []
 
         from ai_trending.crew.report_writing.style_memory import StyleMemory

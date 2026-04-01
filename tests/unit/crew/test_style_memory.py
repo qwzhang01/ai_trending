@@ -12,16 +12,12 @@
 """
 
 from datetime import datetime, timedelta
-from pathlib import Path
-
-import pytest
 from unittest.mock import MagicMock, patch
 
 from ai_trending.crew.report_writing.style_memory import (
     QualityRecord,
     StyleMemory,
 )
-
 
 # =========================================================================
 # QualityRecord 测试
@@ -156,7 +152,9 @@ class TestStyleMemoryReadWrite:
         mem.record_quality_result(date=today_str, validation_issues=[])
 
         good, bad, records = mem._load_all()
-        assert all(r.date >= (today - timedelta(days=14)).strftime("%Y-%m-%d") for r in records)
+        assert all(
+            r.date >= (today - timedelta(days=14)).strftime("%Y-%m-%d") for r in records
+        )
 
     def test_good_bad_patterns_accumulate(self, tmp_path):
         """好/坏表达应累积，不被覆盖。"""
@@ -246,6 +244,7 @@ class TestGetStyleGuidance:
         guidance = mem.get_style_guidance()
         # 计算 guidance 中 good_pattern 出现次数
         import re
+
         matches = re.findall(r"good_pattern_\d+", guidance)
         assert len(matches) <= 5
 
@@ -429,7 +428,7 @@ class TestWriteReportNodeStyleMemory:
             "scoring_result": '{"scored_repos": [], "scored_news": []}',
             "editorial_plan": "",
         }
-        result = write_report_node(state)
+        write_report_node(state)
 
         # 验证 style_guidance 被传递给 Crew
         call_kwargs = mock_crew_instance.run.call_args
@@ -508,7 +507,10 @@ class TestWriteReportNodeStyleMemory:
         MockStyleMemory.return_value.get_style_guidance.side_effect = Exception(
             "读取失败"
         )
-        MockStyleMemory.return_value.extract_patterns_from_report.return_value = ([], [])
+        MockStyleMemory.return_value.extract_patterns_from_report.return_value = (
+            [],
+            [],
+        )
         MockStyleMemory.return_value.record_quality_result.side_effect = Exception(
             "写入失败"
         )

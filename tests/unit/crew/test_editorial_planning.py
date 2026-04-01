@@ -10,8 +10,6 @@
 """
 
 import json
-
-import pytest
 from unittest.mock import MagicMock, patch
 
 from ai_trending.crew.editorial_planning.models import (
@@ -19,7 +17,6 @@ from ai_trending.crew.editorial_planning.models import (
     EditorialPlan,
     HeadlineDecision,
 )
-
 
 # =========================================================================
 # HeadlineDecision 测试
@@ -107,11 +104,17 @@ class TestEditorialPlan:
                 angle="规模切入",
             ),
             repo_angles=[
-                AngleAssignment(item_name="repo1", angle="痛点切入", key_point="解决了X"),
-                AngleAssignment(item_name="repo2", angle="成本切入", key_point="降低了Y"),
+                AngleAssignment(
+                    item_name="repo1", angle="痛点切入", key_point="解决了X"
+                ),
+                AngleAssignment(
+                    item_name="repo2", angle="成本切入", key_point="降低了Y"
+                ),
             ],
             news_angles=[
-                AngleAssignment(item_name="news1", angle="对比切入", key_point="与Z不同"),
+                AngleAssignment(
+                    item_name="news1", angle="对比切入", key_point="与Z不同"
+                ),
             ],
             kill_list=["old_repo: 与昨日重复"],
             today_hook="GPT-5 改变了游戏规则",
@@ -177,7 +180,9 @@ class TestFormatForPrompt:
     def test_repo_angles_displayed(self):
         plan = EditorialPlan(
             repo_angles=[
-                AngleAssignment(item_name="repo1", angle="痛点切入", key_point="解决了X"),
+                AngleAssignment(
+                    item_name="repo1", angle="痛点切入", key_point="解决了X"
+                ),
             ]
         )
         text = plan.format_for_prompt()
@@ -222,29 +227,31 @@ class TestEditorialPlanningCrew:
         """_build_scoring_summary 基本功能。"""
         from ai_trending.crew.editorial_planning.crew import EditorialPlanningCrew
 
-        scoring_result = json.dumps({
-            "scored_repos": [
-                {
-                    "name": "test/repo",
-                    "stars": 5000,
-                    "stars_growth_7d": 1000,
-                    "scores": {"综合": 8.5},
-                    "story_hook": "这个项目很厉害",
-                }
-            ],
-            "scored_news": [
-                {
-                    "title": "AI 重大突破",
-                    "impact_score": 9.0,
-                    "source": "Hacker News",
-                    "so_what_analysis": "改变了行业格局",
-                }
-            ],
-            "daily_summary": {
-                "top_trend": "Agent 框架爆发",
-                "hot_directions": ["MCP", "RAG"],
-            },
-        })
+        scoring_result = json.dumps(
+            {
+                "scored_repos": [
+                    {
+                        "name": "test/repo",
+                        "stars": 5000,
+                        "stars_growth_7d": 1000,
+                        "scores": {"综合": 8.5},
+                        "story_hook": "这个项目很厉害",
+                    }
+                ],
+                "scored_news": [
+                    {
+                        "title": "AI 重大突破",
+                        "impact_score": 9.0,
+                        "source": "Hacker News",
+                        "so_what_analysis": "改变了行业格局",
+                    }
+                ],
+                "daily_summary": {
+                    "top_trend": "Agent 框架爆发",
+                    "hot_directions": ["MCP", "RAG"],
+                },
+            }
+        )
         summary = EditorialPlanningCrew()._build_scoring_summary(scoring_result)
         assert "test/repo" in summary
         assert "5000" in summary
@@ -269,9 +276,11 @@ class TestEditorialPlanningCrew:
         """兜底 Plan 从评分数据中提取头条。"""
         from ai_trending.crew.editorial_planning.crew import EditorialPlanningCrew
 
-        scoring_result = json.dumps({
-            "scored_repos": [{"name": "top/repo"}],
-        })
+        scoring_result = json.dumps(
+            {
+                "scored_repos": [{"name": "top/repo"}],
+            }
+        )
         plan = EditorialPlanningCrew._fallback_plan(scoring_result)
         assert isinstance(plan, EditorialPlan)
         assert plan.signal_strength == "yellow"
@@ -312,7 +321,9 @@ class TestEditorialPlanningCrew:
         mock_crew_instance.kickoff.return_value = mock_result
         crew_obj.crew = MagicMock(return_value=mock_crew_instance)
 
-        plan, usage = crew_obj.run(scoring_result='{"scored_repos": []}', current_date="2026-04-01")
+        plan, usage = crew_obj.run(
+            scoring_result='{"scored_repos": []}', current_date="2026-04-01"
+        )
 
         assert isinstance(plan, EditorialPlan)
         assert plan.signal_strength == "red"
@@ -433,7 +444,7 @@ class TestWriteReportWithEditorialPlan:
             "scoring_result": '{"scored_repos": [], "scored_news": []}',
             "editorial_plan": editorial_plan_text,
         }
-        result = write_report_node(state)
+        write_report_node(state)
 
         # 验证 editorial_plan 作为独立参数传递
         call_kwargs = mock_crew_instance.run.call_args

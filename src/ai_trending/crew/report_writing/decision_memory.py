@@ -22,7 +22,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -55,7 +55,7 @@ class DecisionRecord:
         )
 
     @staticmethod
-    def from_table_row(row: str) -> "DecisionRecord | None":
+    def from_table_row(row: str) -> DecisionRecord | None:
         raw_parts = row.split("|")
         # 去掉首尾空元素
         if raw_parts and not raw_parts[0].strip():
@@ -192,7 +192,9 @@ class DecisionMemory:
         patterns = patterns[-20:]  # 最多保留 20 条模式
 
         self._save_all(records, patterns)
-        log.info(f"[DecisionMemory] 记录编辑决策: {date} {signal_strength} passed={quality_passed}")
+        log.info(
+            f"[DecisionMemory] 记录编辑决策: {date} {signal_strength} passed={quality_passed}"
+        )
 
     # ==================== 内部方法 ====================
 

@@ -25,7 +25,6 @@ from ai_trending.nodes import (
     write_report_node,
 )
 
-
 # ── RepoBrief 模型测试 ───────────────────────────────────────────────────────
 
 
@@ -226,9 +225,7 @@ class TestFormatForPrompt:
     def test_repos_without_growth(self):
         """stars_growth_7d 为 None 时不显示增长信息。"""
         brief = WritingBrief(
-            top_repos=[
-                RepoBrief(name="repo-b", stars=1000, stars_growth_7d=None)
-            ]
+            top_repos=[RepoBrief(name="repo-b", stars=1000, stars_growth_7d=None)]
         )
         text = brief.format_for_prompt()
         assert "1000" in text
@@ -512,8 +509,7 @@ class TestBuildWritingBrief:
     def test_max_5_repos(self):
         """最多只取前 5 个项目。"""
         repos = [
-            {"name": f"repo-{i}", "scores": {"综合": 8.0 - i * 0.1}}
-            for i in range(10)
+            {"name": f"repo-{i}", "scores": {"综合": 8.0 - i * 0.1}} for i in range(10)
         ]
         data = json.dumps(
             {"scored_repos": repos, "scored_news": [], "daily_summary": {}}
@@ -524,8 +520,7 @@ class TestBuildWritingBrief:
     def test_max_8_news(self):
         """最多只取前 8 条新闻。"""
         news = [
-            {"title": f"news-{i}", "impact_score": 8.0 - i * 0.1}
-            for i in range(15)
+            {"title": f"news-{i}", "impact_score": 8.0 - i * 0.1} for i in range(15)
         ]
         data = json.dumps(
             {"scored_repos": [], "scored_news": news, "daily_summary": {}}
@@ -603,9 +598,7 @@ class TestWriteReportNodeWithBrief:
 
             # 验证 run() 被调用时包含 writing_brief 参数
             call_kwargs = mock_cls.return_value.run.call_args
-            assert "writing_brief" in call_kwargs.kwargs or (
-                len(call_kwargs.args) > 5
-            )
+            assert "writing_brief" in call_kwargs.kwargs or (len(call_kwargs.args) > 5)
             # 获取 writing_brief 参数值
             if call_kwargs.kwargs.get("writing_brief"):
                 brief_text = call_kwargs.kwargs["writing_brief"]

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-
 # ==================== 写作简报模型（评分层→写作层） ====================
 
 
@@ -129,9 +128,7 @@ class WritingBrief(BaseModel):
             "yellow": "🟡 常规更新日",
             "green": "🟢 平静日",
         }
-        signal_label = signal_map.get(
-            self.signal_strength_suggestion, "🟡 常规更新日"
-        )
+        signal_label = signal_map.get(self.signal_strength_suggestion, "🟡 常规更新日")
         lines.append(f"**今日信号强度建议**: {signal_label}")
         if self.headline_candidate:
             lines.append(f"**建议头条**: {self.headline_candidate}")
@@ -161,7 +158,11 @@ class WritingBrief(BaseModel):
                 # readme_summary 截断到 100 字，避免太长
                 if repo.readme_summary:
                     summary = repo.readme_summary[:100].rstrip()
-                    lines.append(f"  README: {summary}…" if len(repo.readme_summary) > 100 else f"  README: {summary}")
+                    lines.append(
+                        f"  README: {summary}…"
+                        if len(repo.readme_summary) > 100
+                        else f"  README: {summary}"
+                    )
                 if repo.suggested_angle:
                     lines.append(f"  角度: {repo.suggested_angle}")
             lines.append("")
@@ -181,9 +182,7 @@ class WritingBrief(BaseModel):
                 if news.so_what_analysis:
                     lines.append(f"  So What: {news.so_what_analysis}")
             lines.append("")
-            lines.append(
-                "新闻请直接使用上方 So What 分析，不要替换为泛泛之谈。"
-            )
+            lines.append("新闻请直接使用上方 So What 分析，不要替换为泛泛之谈。")
             lines.append("")
 
         # 趋势判断

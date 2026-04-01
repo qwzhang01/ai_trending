@@ -10,15 +10,12 @@
 """
 
 import json
-
-import pytest
 from unittest.mock import MagicMock, patch
 
 from ai_trending.crew.quality_review.models import (
     QualityIssue,
     QualityReviewResult,
 )
-
 
 # =========================================================================
 # QualityIssue 测试
@@ -76,9 +73,15 @@ class TestQualityReviewResult:
             passed=False,
             overall_assessment="发现 2 处虚构数据",
             issues=[
-                QualityIssue(severity="error", location="今日头条", description="虚构数据"),
-                QualityIssue(severity="warning", location="趋势洞察", description="风格问题"),
-                QualityIssue(severity="info", location="GitHub 热点项目", description="建议优化"),
+                QualityIssue(
+                    severity="error", location="今日头条", description="虚构数据"
+                ),
+                QualityIssue(
+                    severity="warning", location="趋势洞察", description="风格问题"
+                ),
+                QualityIssue(
+                    severity="info", location="GitHub 热点项目", description="建议优化"
+                ),
             ],
             suggestions=["建议人工检查统计数据来源"],
         )
@@ -194,26 +197,28 @@ class TestQualityReviewCrew:
         """_build_scoring_summary 基本功能。"""
         from ai_trending.crew.quality_review.crew import QualityReviewCrew
 
-        scoring_result = json.dumps({
-            "scored_repos": [
-                {
-                    "name": "test/repo",
-                    "stars": 5000,
-                    "stars_growth_7d": 1000,
-                    "language": "Python",
-                }
-            ],
-            "scored_news": [
-                {
-                    "title": "AI 重大突破",
-                    "source": "Hacker News",
-                }
-            ],
-            "daily_summary": {
-                "top_trend": "Agent 框架爆发",
-                "hot_directions": ["MCP", "RAG"],
-            },
-        })
+        scoring_result = json.dumps(
+            {
+                "scored_repos": [
+                    {
+                        "name": "test/repo",
+                        "stars": 5000,
+                        "stars_growth_7d": 1000,
+                        "language": "Python",
+                    }
+                ],
+                "scored_news": [
+                    {
+                        "title": "AI 重大突破",
+                        "source": "Hacker News",
+                    }
+                ],
+                "daily_summary": {
+                    "top_trend": "Agent 框架爆发",
+                    "hot_directions": ["MCP", "RAG"],
+                },
+            }
+        )
         summary = QualityReviewCrew()._build_scoring_summary(scoring_result)
         assert "test/repo" in summary
         assert "5000" in summary
@@ -253,7 +258,9 @@ class TestQualityReviewCrew:
             passed=True,
             overall_assessment="内容质量良好",
             issues=[
-                QualityIssue(severity="info", location="趋势洞察", description="可优化"),
+                QualityIssue(
+                    severity="info", location="趋势洞察", description="可优化"
+                ),
             ],
         )
         mock_result = MagicMock()
@@ -415,7 +422,9 @@ class TestQualityReviewNode:
             passed=False,
             overall_assessment="发现虚构数据",
             issues=[
-                QualityIssue(severity="error", location="今日头条", description="虚构数据"),
+                QualityIssue(
+                    severity="error", location="今日头条", description="虚构数据"
+                ),
             ],
         )
         mock_instance = MagicMock()
@@ -444,7 +453,9 @@ class TestQualityReviewNode:
             passed=True,
             overall_assessment="基本合格",
             issues=[
-                QualityIssue(severity="warning", location="趋势洞察", description="风格偏离"),
+                QualityIssue(
+                    severity="warning", location="趋势洞察", description="风格偏离"
+                ),
             ],
         )
         mock_instance = MagicMock()
@@ -470,14 +481,27 @@ class TestQualityReviewNode:
 
         mock_review = QualityReviewResult(passed=True)
         mock_instance = MagicMock()
-        mock_instance.run.return_value = (mock_review, {"total_tokens": 200, "prompt_tokens": 150, "completion_tokens": 50, "successful_requests": 1})
+        mock_instance.run.return_value = (
+            mock_review,
+            {
+                "total_tokens": 200,
+                "prompt_tokens": 150,
+                "completion_tokens": 50,
+                "successful_requests": 1,
+            },
+        )
         MockCrew.return_value = mock_instance
 
         state = {
             "current_date": "2026-04-01",
             "report_content": "# AI 日报\n\n测试内容",
             "scoring_result": "{}",
-            "token_usage": {"total_tokens": 1000, "prompt_tokens": 800, "completion_tokens": 200, "successful_requests": 3},
+            "token_usage": {
+                "total_tokens": 1000,
+                "prompt_tokens": 800,
+                "completion_tokens": 200,
+                "successful_requests": 3,
+            },
         }
         result = quality_review_node(state)
 

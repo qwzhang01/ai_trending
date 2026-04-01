@@ -54,7 +54,7 @@ class TopicRecord:
         return f"| {self.date} | {self.headline} | {kw_str} | {self.hook} |"
 
     @staticmethod
-    def from_table_row(row: str) -> "TopicRecord | None":
+    def from_table_row(row: str) -> TopicRecord | None:
         """从 Markdown 表格行解析。"""
         # split("|") 会在首尾产生空串，需要去掉首尾但保留中间空字段
         raw_parts = row.split("|")
@@ -277,7 +277,9 @@ class TopicTracker:
 
         for kw, count in kw_counter.most_common():
             if count >= 2:
-                kill_items.append(f"{kw}（近{KILL_LIST_DAYS}天出现{count}次，建议降级或换角度）")
+                kill_items.append(
+                    f"{kw}（近{KILL_LIST_DAYS}天出现{count}次，建议降级或换角度）"
+                )
 
         # 近 2 天内的头条话题
         cutoff_2d = self._cutoff_date(2)
@@ -311,10 +313,26 @@ class TopicTracker:
 
         # 提取常见技术关键词
         tech_keywords = [
-            "AI", "LLM", "Agent", "MCP", "RAG", "GPT", "Claude",
-            "Gemini", "Llama", "Mistral", "OpenAI", "Anthropic",
-            "DeepSeek", "transformer", "diffusion", "多模态",
-            "微调", "推理", "编程助手", "代码生成",
+            "AI",
+            "LLM",
+            "Agent",
+            "MCP",
+            "RAG",
+            "GPT",
+            "Claude",
+            "Gemini",
+            "Llama",
+            "Mistral",
+            "OpenAI",
+            "Anthropic",
+            "DeepSeek",
+            "transformer",
+            "diffusion",
+            "多模态",
+            "微调",
+            "推理",
+            "编程助手",
+            "代码生成",
         ]
         content_lower = report_content.lower()
         for kw in tech_keywords:
@@ -348,7 +366,11 @@ class TopicTracker:
                 # 去掉星数等后缀
                 title = re.split(r"\s+⭐", title)[0].strip()
                 return title
-            if in_headline_section and line.startswith("## ") and "今日头条" not in line:
+            if (
+                in_headline_section
+                and line.startswith("## ")
+                and "今日头条" not in line
+            ):
                 break  # 进入下一个 Section，没找到
 
         return ""

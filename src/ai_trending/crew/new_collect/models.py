@@ -40,7 +40,7 @@ class RichNewsData(BaseModel):
     )
 
     @classmethod
-    def from_dict(cls, data: dict) -> "RichNewsData":
+    def from_dict(cls, data: dict) -> RichNewsData:
         """从 fetchers.py 输出的 dict 构建 RichNewsData。
 
         自动映射所有已知字段，忽略未知 key。

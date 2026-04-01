@@ -8,15 +8,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from ai_trending.crew.new_collect.content_extractor import (
     enrich_empty_summaries,
     extract_article_content,
 )
-
 
 # ── extract_article_content 测试 ──────────────────────────────
 
@@ -28,7 +25,9 @@ class TestExtractArticleContent:
     def test_normal_extraction(self, mock_traf):
         """正常情况：应返回提取后的正文摘要。"""
         mock_traf.fetch_url.return_value = "<html><body>Hello World</body></html>"
-        mock_traf.extract.return_value = "This is the article content about AI agents and LLM."
+        mock_traf.extract.return_value = (
+            "This is the article content about AI agents and LLM."
+        )
 
         result = extract_article_content("https://example.com/article")
 
@@ -100,9 +99,7 @@ class TestExtractArticleContent:
 class TestEnrichEmptySummaries:
     """测试批量正文摘要填充。"""
 
-    @patch(
-        "ai_trending.crew.new_collect.content_extractor.extract_article_content"
-    )
+    @patch("ai_trending.crew.new_collect.content_extractor.extract_article_content")
     def test_fills_empty_summaries(self, mock_extract):
         """应为 summary 为空的条目填充正文。"""
         mock_extract.return_value = "Extracted content"
@@ -120,9 +117,7 @@ class TestEnrichEmptySummaries:
         assert items[1]["summary"] == "existing"  # 已有摘要不变
         assert items[2]["summary"] == "Extracted content"
 
-    @patch(
-        "ai_trending.crew.new_collect.content_extractor.extract_article_content"
-    )
+    @patch("ai_trending.crew.new_collect.content_extractor.extract_article_content")
     def test_partial_failure(self, mock_extract):
         """部分提取失败时，成功的应被填充，失败的保持空。"""
         mock_extract.side_effect = ["Extracted", "", "Also extracted"]
@@ -141,9 +136,7 @@ class TestEnrichEmptySummaries:
         filled_items = [i for i in items if i["summary"]]
         assert len(filled_items) >= 1
 
-    @patch(
-        "ai_trending.crew.new_collect.content_extractor.extract_article_content"
-    )
+    @patch("ai_trending.crew.new_collect.content_extractor.extract_article_content")
     def test_all_failure(self, mock_extract):
         """全部失败时应返回 0，不崩溃。"""
         mock_extract.return_value = ""
@@ -173,9 +166,7 @@ class TestEnrichEmptySummaries:
         filled = enrich_empty_summaries([])
         assert filled == 0
 
-    @patch(
-        "ai_trending.crew.new_collect.content_extractor.extract_article_content"
-    )
+    @patch("ai_trending.crew.new_collect.content_extractor.extract_article_content")
     def test_max_items_limit(self, mock_extract):
         """应最多只处理 max_items 条。"""
         mock_extract.return_value = "content"
@@ -190,9 +181,7 @@ class TestEnrichEmptySummaries:
         # mock 应最多被调用 3 次
         assert mock_extract.call_count <= 3
 
-    @patch(
-        "ai_trending.crew.new_collect.content_extractor.extract_article_content"
-    )
+    @patch("ai_trending.crew.new_collect.content_extractor.extract_article_content")
     def test_items_without_url_skipped(self, mock_extract):
         """没有 url 的条目应被跳过。"""
         mock_extract.return_value = "content"
@@ -202,7 +191,7 @@ class TestEnrichEmptySummaries:
             {"title": "Has URL", "url": "https://a.com", "summary": ""},
         ]
 
-        filled = enrich_empty_summaries(items)
+        enrich_empty_summaries(items)
 
         # 只有 1 个有 URL 的被处理
         assert mock_extract.call_count == 1

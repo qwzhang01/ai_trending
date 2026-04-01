@@ -255,8 +255,7 @@ class GitHubFetcher:
 
             # 1. 记录当日快照
             repos_data = [
-                {"full_name": c.full_name, "stars": c.stars}
-                for c in candidates
+                {"full_name": c.full_name, "stars": c.stars} for c in candidates
             ]
             tracker.record_snapshot(repos_data)
 
@@ -271,9 +270,7 @@ class GitHubFetcher:
 
     # ── README 摘要抓取 ──────────────────────────────────────
 
-    def _fetch_readmes_concurrently(
-        self, candidates: list[RepoCandidate]
-    ) -> None:
+    def _fetch_readmes_concurrently(self, candidates: list[RepoCandidate]) -> None:
         """并发抓取候选仓库的 README 摘要，结果直接写入 candidate 对象。
 
         最多并发 5 个线程，总超时 30 秒。单个仓库失败不阻塞其他仓库。
@@ -296,13 +293,10 @@ class GitHubFetcher:
                         filled += 1
                 except Exception as e:
                     log.warning(
-                        f"README 抓取失败({repo.full_name}): "
-                        f"{type(e).__name__}: {e}"
+                        f"README 抓取失败({repo.full_name}): {type(e).__name__}: {e}"
                     )
 
-        log.info(
-            f"README 摘要抓取完成: {filled}/{len(candidates)} 个仓库获取成功"
-        )
+        log.info(f"README 摘要抓取完成: {filled}/{len(candidates)} 个仓库获取成功")
 
     def _fetch_readme_summary(self, full_name: str) -> str:
         """获取仓库 README 的前 500 字符摘要。

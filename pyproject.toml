@@ -142,6 +142,8 @@ module = [
     "ai_trending.crew.trend_scoring.crew",
     "ai_trending.crew.report_writing.crew",
     "ai_trending.crew.github_trending.crew",
+    "ai_trending.crew.quality_review.crew",
+    "ai_trending.crew.editorial_planning.crew",
 ]
 disallow_untyped_defs = false
 disallow_untyped_decorators = false

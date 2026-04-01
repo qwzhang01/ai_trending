@@ -414,8 +414,7 @@ class ReportWritingCrew:
                     or "（无写作简报，请根据编辑决策自行组织内容）",
                     "editorial_plan": editorial_plan
                     or "（无编辑决策，请自行判断信号强度、头条选择和写作角度）",
-                    "style_guidance": style_guidance
-                    or "（无风格记忆记录）",
+                    "style_guidance": style_guidance or "（无风格记忆记录）",
                 }
             )
 

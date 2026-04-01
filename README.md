@@ -30,15 +30,15 @@
   <tr>
     <!-- 左：手机截图，控制宽度让高度和右边匹配 -->
     <td align="center" valign="top" width="38%">
-      <img src="./doc/screenshot-wechat-article.jpg" width="240" />
+      <img src="./docs/assets/screenshot-wechat-article.jpg" width="240" />
       <br/><sub><b>📱 微信公众号文章</b></sub>
     </td>
     <!-- 右：两张叠放 -->
     <td align="center" valign="top" width="62%">
-      <img src="./doc/screenshot-terminal.png" width="420" />
+      <img src="./docs/assets/screenshot-terminal.png" width="420" />
       <br/><sub><b>⚡ 终端运行输出</b></sub>
       <br/><br/>
-      <img src="./doc/screenshot-wechat-message.jpg" width="220" />
+      <img src="./docs/assets/screenshot-wechat-message.jpg" width="220" />
       <br/><sub><b>🔔 微信消息推送</b></sub>
     </td>
   </tr>
@@ -46,7 +46,7 @@
 
 <p align="center">
   <b>📲 扫码订阅每日 AI 日报</b><br/>
-  <img src="./doc/qrcode_for_gh_2eb1bcbaab95_258.jpg" width="130" />
+  <img src="./docs/assets/qrcode.jpg" width="130" />
 </p>
 
 ---
@@ -111,7 +111,7 @@
 ### 整体分层架构
 
 <div align="center">
-  <img src="./doc/架构分层总览.png" alt="架构分层总览" width="800" />
+  <img src="./docs/assets/架构分层总览.png" alt="架构分层总览" width="800" />
 </div>
 
 ```
@@ -139,7 +139,7 @@
 ### LangGraph 状态机流程
 
 <div align="center">
-  <img src="./doc/状态机可视化.png" alt="LangGraph 状态机可视化" width="800" />
+  <img src="./docs/assets/状态机可视化.png" alt="LangGraph 状态机可视化" width="800" />
 </div>
 
 ```mermaid
@@ -168,7 +168,7 @@ flowchart TD
 ### 状态字段流转
 
 <div align="center">
-  <img src="./doc/状态字段流转图.png" alt="状态字段流转图" width="700" />
+  <img src="./docs/assets/状态字段流转图.png" alt="状态字段流转图" width="700" />
 </div>
 
 ### 目录结构
@@ -405,6 +405,7 @@ RUN_INTEGRATION_TESTS=1 .venv/bin/python -m pytest tests/integration/ -v
 在 `src/ai_trending/crew/new_collect/fetchers.py` 中添加新的 Fetcher 方法：
 
 ```python
+
 def _fetch_my_source(self, keywords: list[str], top_n: int) -> list[dict]:
     """从自定义数据源抓取新闻。"""
     resp = safe_request("GET", "https://api.example.com/news", params={...})
@@ -418,6 +419,7 @@ def _fetch_my_source(self, keywords: list[str], top_n: int) -> list[dict]:
         "summary": item.get("description", ""),
         "time": item.get("published_at", ""),
     } for item in resp.json().get("articles", [])]
+
 ```
 
 ### 新增发布渠道
