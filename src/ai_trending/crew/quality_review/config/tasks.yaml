@@ -1,0 +1,55 @@
+quality_review_task:
+  description: >
+    当前日期: {current_date}
+
+    # 待审核日报内容
+
+    {report_content}
+
+    ---
+
+    # 评分源数据（用于交叉比对）
+
+    {scoring_summary}
+
+    ---
+
+    # 审核要求
+
+    请对上方日报内容执行以下四项检查，严格按检查项逐一完成：
+
+    ## 1. 虚构数据检查（severity: error）
+    - 日报中出现的百分比、金额、统计数字（如"占 30%"、"融资 X 亿"），在评分源数据中是否有依据
+    - 日报中引用的项目星数、增长数字，是否与源数据一致
+    - 如果源数据中没有该数字的依据，标记为 error
+
+    ## 2. 事实一致性检查（severity: error/warning）
+    - 项目名称、URL 是否正确
+    - 新闻标题和来源是否与源数据匹配
+    - 描述内容是否与源数据矛盾
+
+    ## 3. 风格合规检查（severity: warning）
+    - 是否使用了禁用词：重磅、震撼、颠覆、革命性、划时代、里程碑、历史性、
+      强烈推荐、必看、不容错过、太强了、绝了、牛逼、未来已来、新时代、
+      重新定义、拓展新边界、具有重要意义
+    - 是否有感叹号（!或！）
+    - 是否有"相当于……的……版"句式
+    - 是否有营销腔调、过度渲染
+
+    ## 4. 结构完整性检查（severity: warning）
+    - 五大必要 Section 是否齐全：今日头条、GitHub 热点项目、AI 热点新闻、趋势洞察、本周行动建议
+    - 今日信号强度标签是否存在（🔴/🟡/🟢 三选一）
+    - 新闻可信度标签是否存在（🟢 一手信源/🟡 社区讨论/🔴 待验证）
+
+    # 输出要求
+    - passed: 无 error 级问题即为 true
+    - 每个问题需明确 severity、location（Section 名）、description、suggestion
+    - overall_assessment: 一句话总结日报质量
+    - suggestions: 通用改进建议（不针对特定 Section）
+
+  expected_output: >
+    返回一个符合 QualityReviewResult 模型的结构化结果，
+    包含 passed、overall_assessment、issues 和 suggestions 字段。
+    issues 中每个 QualityIssue 包含 severity、location、description、suggestion。
+    无 error 级问题时 passed 为 true。
+  agent: quality_reviewer

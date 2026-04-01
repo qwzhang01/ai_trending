@@ -252,3 +252,48 @@ class TestReportWritingCrew:
         assert isinstance(output, ReportOutput)
         assert len(output.validation_issues) > 0  # 应记录校验问题
         assert output.content == bad_content  # 内容不被修改
+
+    def test_run_with_editorial_plan(self, mock_llm, mock_crew_kickoff_with_report):
+        """传入 editorial_plan 时，run() 应正常工作。"""
+        crew = ReportWritingCrew()
+        result = crew.run(
+            github_data="GitHub 数据",
+            news_data="新闻数据",
+            scoring_result='{"scored_repos": [], "scored_news": []}',
+            current_date="2025-01-01",
+            editorial_plan="## 编辑决策\n**信号强度**: 🔴 重大变化日",
+        )
+
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)
+        assert len(output.content) > 0
+
+    def test_run_with_empty_editorial_plan(self, mock_llm, mock_crew_kickoff_with_report):
+        """editorial_plan 为空时，run() 应正常工作（兼容旧调用方式）。"""
+        crew = ReportWritingCrew()
+        result = crew.run(
+            github_data="GitHub 数据",
+            news_data="新闻数据",
+            scoring_result="{}",
+            current_date="2025-01-01",
+            editorial_plan="",
+        )
+
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)
+
+    def test_run_without_editorial_plan(self, mock_llm, mock_crew_kickoff_with_report):
+        """不传 editorial_plan 时（默认值），run() 应正常工作。"""
+        crew = ReportWritingCrew()
+        result = crew.run(
+            github_data="GitHub 数据",
+            news_data="新闻数据",
+            scoring_result="{}",
+            current_date="2025-01-01",
+        )
+
+        assert isinstance(result, tuple)
+        output, token_usage = result
+        assert isinstance(output, ReportOutput)

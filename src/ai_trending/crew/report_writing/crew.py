@@ -5,6 +5,9 @@
     news_data:      str  — AI 新闻原始数据
     scoring_result: str  — 结构化评分 JSON 字符串
     current_date:   str  — 日期，格式 YYYY-MM-DD
+    writing_brief:  str  — 写作简报（WritingBrief.format_for_prompt() 生成的文本）
+    editorial_plan: str  — 编辑决策（EditorialPlan.format_for_prompt() 生成的文本）
+    style_guidance: str  — 风格记忆指导（StyleMemory.get_style_guidance() 生成的文本）
 
 输出 pydantic: ReportOutput
     content:           str       — 完整的 Markdown 日报正文
@@ -19,7 +22,9 @@
     6. ## 本周行动建议（1-2 条可落地任务，含时效性理由）
     7. ## 上期回顾（可选，追踪上周推荐项目后续发展）
 
-注意：本模块实现的是七段式结构，与旧版四段式规范文档不同，以本文件和 tasks.yaml 为准。
+注意：
+  - 写作层根据编辑决策（EditorialPlan）执行，不自行决定信号强度、头条和角度
+  - 本模块实现的是七段式结构，与旧版四段式规范文档不同，以本文件和 tasks.yaml 为准
 """
 
 from __future__ import annotations
@@ -357,6 +362,9 @@ class ReportWritingCrew:
         scoring_result: str,
         current_date: str,
         previous_report_context: str = "",
+        writing_brief: str = "",
+        editorial_plan: str = "",
+        style_guidance: str = "",
     ) -> tuple[ReportOutput, dict[str, int]]:
         """对外公开入口：执行日报撰写，返回 (ReportOutput, token_usage)。
 
@@ -367,16 +375,34 @@ class ReportWritingCrew:
             current_date:             日期，格式 YYYY-MM-DD
             previous_report_context:  上期回顾追踪数据（由 PreviousReportTracker 生成），
                                       为空时 LLM 将省略「上期回顾」Section
+            writing_brief:            写作简报文本（由 WritingBrief.format_for_prompt() 生成），
+                                      为空时回退到直接使用 scoring_result JSON
+            editorial_plan:           编辑决策文本（由 EditorialPlan.format_for_prompt() 生成），
+                                      为空时写作者自行决定信号强度、头条和角度
+            style_guidance:           风格记忆指导文本（由 StyleMemory.get_style_guidance() 生成），
+                                      为空时无历史风格指导
 
         Returns:
             (ReportOutput, token_usage_dict)，其中 token_usage_dict 包含
             prompt_tokens、completion_tokens、total_tokens、successful_requests。
         """
         log.info(f"[ReportWritingCrew] 开始撰写日报 ({current_date})")
+        if editorial_plan:
+            log.info("[ReportWritingCrew] 已注入 EditorialPlan 编辑决策")
+        else:
+            log.info("[ReportWritingCrew] 无 EditorialPlan，写作者将自行决定编辑方向")
+        if writing_brief:
+            log.info("[ReportWritingCrew] 已注入 WritingBrief 写作简报")
+        else:
+            log.info("[ReportWritingCrew] 无 WritingBrief，回退到 scoring_result JSON")
         if previous_report_context:
             log.info("[ReportWritingCrew] 已注入上期回顾追踪数据")
         else:
             log.info("[ReportWritingCrew] 无上期回顾数据，将省略上期回顾 Section")
+        if style_guidance and "无风格记忆" not in style_guidance:
+            log.info("[ReportWritingCrew] 已注入风格记忆指导")
+        else:
+            log.info("[ReportWritingCrew] 无风格记忆记录")
 
         try:
             result = self.crew().kickoff(
@@ -387,6 +413,12 @@ class ReportWritingCrew:
                     "current_date": current_date,
                     "previous_report_context": previous_report_context
                     or "（无上期数据，请省略「上期回顾」Section）",
+                    "writing_brief": writing_brief
+                    or "（无写作简报，请直接从 scoring_result JSON 中提取信息）",
+                    "editorial_plan": editorial_plan
+                    or "（无编辑决策，请自行判断信号强度、头条选择和写作角度）",
+                    "style_guidance": style_guidance
+                    or "（无风格记忆记录）",
                 }
             )
 

@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -91,6 +92,12 @@ class GitHubFetcher:
             )
             for r in candidates_raw[:15]
         ]
+
+        # 并发抓取 top-15 候选仓库的 README 摘要
+        self._fetch_readmes_concurrently(candidates)
+
+        # 星数快照：记录当日快照 + 填充增长数据
+        self._track_star_growth(candidates)
 
         return GitHubSearchResult(
             candidates=candidates,
@@ -231,3 +238,140 @@ class GitHubFetcher:
         score += 1.8 if topics & TREND_TOPICS else 0.0
         score += min(match_count * 0.5, 1.2)
         return min(score, 10.0)
+
+    # ── 星数增长追踪 ─────────────────────────────────────────
+
+    @staticmethod
+    def _track_star_growth(candidates: list[RepoCandidate]) -> None:
+        """记录当日星数快照并为候选仓库填充增长数据。
+
+        使用 StarTracker 实现本地持久化星数快照。失败时仅记录日志，
+        不影响主流程。
+        """
+        try:
+            from ai_trending.crew.github_trending.star_tracker import StarTracker
+
+            tracker = StarTracker()
+
+            # 1. 记录当日快照
+            repos_data = [
+                {"full_name": c.full_name, "stars": c.stars}
+                for c in candidates
+            ]
+            tracker.record_snapshot(repos_data)
+
+            # 2. 查询历史快照，填充增长数据
+            tracker.enrich_candidates(candidates, days=7)
+
+            # 3. 清理过期快照
+            tracker.cleanup_old_snapshots()
+
+        except Exception as e:
+            log.warning(f"星数增长追踪失败，不影响主流程: {type(e).__name__}: {e}")
+
+    # ── README 摘要抓取 ──────────────────────────────────────
+
+    def _fetch_readmes_concurrently(
+        self, candidates: list[RepoCandidate]
+    ) -> None:
+        """并发抓取候选仓库的 README 摘要，结果直接写入 candidate 对象。
+
+        最多并发 5 个线程，总超时 30 秒。单个仓库失败不阻塞其他仓库。
+        """
+        if not candidates:
+            return
+
+        filled = 0
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {
+                executor.submit(self._fetch_readme_summary, repo.full_name): repo
+                for repo in candidates
+            }
+            for future in as_completed(futures, timeout=60):
+                repo = futures[future]
+                try:
+                    summary = future.result()
+                    if summary:
+                        repo.readme_summary = summary
+                        filled += 1
+                except Exception as e:
+                    log.warning(
+                        f"README 抓取失败({repo.full_name}): "
+                        f"{type(e).__name__}: {e}"
+                    )
+
+        log.info(
+            f"README 摘要抓取完成: {filled}/{len(candidates)} 个仓库获取成功"
+        )
+
+    def _fetch_readme_summary(self, full_name: str) -> str:
+        """获取仓库 README 的前 500 字符摘要。
+
+        使用 GitHub Contents API 获取原始 README 文本，
+        去除 badge 图片、链接标记等噪音后截取前 500 字符。
+
+        Args:
+            full_name: 仓库全名，如 "owner/repo"
+
+        Returns:
+            清洗后的 README 摘要，失败时返回空字符串
+        """
+        token = os.environ.get("GITHUB_TRENDING_TOKEN", "")
+        headers = {"Accept": "application/vnd.github.raw+json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        resp = safe_request(
+            "GET",
+            f"https://api.github.com/repos/{full_name}/readme",
+            headers=headers,
+            timeout=10,
+            max_retries=1,
+            operation_name=f"readme({full_name})",
+        )
+        if resp is None:
+            return ""
+
+        content = resp.text[:2000]  # 限制读取量，降低内存开销
+        return self._clean_readme(content)[:500]
+
+    @staticmethod
+    def _clean_readme(raw: str) -> str:
+        """清洗 README 原始文本，去除 badge、图片链接、HTML 标签等噪音。
+
+        处理逻辑：
+        1. 移除 Markdown badge 图片 ([![...](img_url)](link_url))
+        2. 移除普通 Markdown 图片 (![alt](url))
+        3. 移除 HTML 标签 (<img>, <a>, <div> 等)
+        4. 将 Markdown 链接 [text](url) 替换为纯文本 text
+        5. 移除 Markdown 标题标记 (###)
+        6. 压缩连续空白行
+        7. 去除首尾空白
+
+        Args:
+            raw: README 原始 Markdown 文本
+
+        Returns:
+            清洗后的纯文本摘要
+        """
+        text = raw
+
+        # 1. 移除 badge（带链接的图片）: [![alt](img)](link)
+        text = re.sub(r"\[!\[.*?\]\(.*?\)\]\(.*?\)", "", text)
+
+        # 2. 移除普通 Markdown 图片: ![alt](url)
+        text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
+
+        # 3. 移除 HTML 标签（img, a, div, span, p, br, hr 等）
+        text = re.sub(r"<[^>]+>", "", text)
+
+        # 4. 将 Markdown 链接 [text](url) 替换为纯文本
+        text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+
+        # 5. 移除 Markdown 标题标记
+        text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+
+        # 6. 压缩连续空白行为单个换行
+        text = re.sub(r"\n{3,}", "\n\n", text)
+
+        return text.strip()

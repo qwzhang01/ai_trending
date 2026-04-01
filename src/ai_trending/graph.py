@@ -7,7 +7,7 @@
   - 每个节点职责单一，输入输出明确
 
 流程:
-  START → [collect_github, collect_news] (并行) → score_trends → write_report → publish → END
+  START → [collect_github, collect_news] (并行) → score_trends → editorial_planning → write_report → quality_review → publish → END
 """
 
 from __future__ import annotations
@@ -42,8 +42,14 @@ class TrendingState(TypedDict, total=False):
     # --- 评分层输出 ---
     scoring_result: str  # 结构化 JSON 评分（由 score_trends 节点写入）
 
+    # --- 编辑决策层输出 ---
+    editorial_plan: str  # 编辑部选题 Plan 文本（由 editorial_planning 节点写入）
+
     # --- 报告层输出 ---
     report_content: str  # 最终 Markdown 报告（由 write_report 节点写入）
+
+    # --- 质量审核层输出 ---
+    quality_review: str  # 质量审核结果摘要（由 quality_review 节点写入）
 
     # --- 发布层输出 ---
     publish_results: Annotated[
@@ -67,7 +73,9 @@ def build_graph() -> StateGraph:
     from ai_trending.nodes import (
         collect_github_node,
         collect_news_node,
+        editorial_planning_node,
         publish_node,
+        quality_review_node,
         score_trends_node,
         write_report_node,
     )
@@ -78,7 +86,9 @@ def build_graph() -> StateGraph:
     graph.add_node("collect_github", collect_github_node)
     graph.add_node("collect_news", collect_news_node)
     graph.add_node("score_trends", score_trends_node)
+    graph.add_node("editorial_planning", editorial_planning_node)
     graph.add_node("write_report", write_report_node)
+    graph.add_node("quality_review", quality_review_node)
     graph.add_node("publish", publish_node)
 
     # 定义边：从 START 并行进入两个采集节点
@@ -89,13 +99,15 @@ def build_graph() -> StateGraph:
     graph.add_edge("collect_github", "score_trends")
     graph.add_edge("collect_news", "score_trends")
 
-    # 评分 → 写报告 → 发布 → 结束
-    graph.add_edge("score_trends", "write_report")
-    graph.add_edge("write_report", "publish")
+    # 评分 → 编辑选题 → 写报告 → 质量审核 → 发布 → 结束
+    graph.add_edge("score_trends", "editorial_planning")
+    graph.add_edge("editorial_planning", "write_report")
+    graph.add_edge("write_report", "quality_review")
+    graph.add_edge("quality_review", "publish")
     graph.add_edge("publish", END)
 
     log.info(
-        "LangGraph 流程图构建完成: START → [collect_github, collect_news] → score_trends → write_report → publish → END"
+        "LangGraph 流程图构建完成: START → [collect_github, collect_news] → score_trends → editorial_planning → write_report → quality_review → publish → END"
     )
 
     return graph.compile()

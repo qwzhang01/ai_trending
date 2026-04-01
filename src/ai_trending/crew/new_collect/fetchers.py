@@ -125,7 +125,30 @@ class NewsFetcher:
             f"去重后 {len(unique_news)} 条，跨日过滤后 {len(new_news)} 条，"
             f"返回 Top {min(len(new_news), top_n)}"
         )
-        return new_news[:top_n], source_stats
+
+        # 对 summary 为空的条目补充正文摘要（特别是 HN 来源）
+        result_news = new_news[:top_n]
+        self._enrich_empty_summaries(result_news)
+
+        return result_news, source_stats
+
+    # ------------------------------------------------------------------
+    # 正文摘要补充
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _enrich_empty_summaries(items: list[dict]) -> None:
+        """对 summary 为空的新闻条目，尝试从原文 URL 提取正文摘要。
+
+        调用 content_extractor 模块并发提取，失败不影响原有数据。
+        """
+        try:
+            from ai_trending.crew.new_collect.content_extractor import (
+                enrich_empty_summaries,
+            )
+
+            enrich_empty_summaries(items, max_items=10, max_chars=300, timeout=30)
+        except Exception as e:
+            log.warning(f"正文摘要补充失败，不影响主流程: {type(e).__name__}: {e}")
 
     # ------------------------------------------------------------------
     # 异步并发入口
