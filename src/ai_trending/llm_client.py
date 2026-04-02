@@ -129,14 +129,91 @@ def _model_supports_tool_choice_function(model_name: str) -> bool:
     return not any(kw in model_lower for kw in _MODELS_WITHOUT_TOOL_CHOICE_FUNCTION)
 
 
+# 标记是否已经对 InternalInstructor 打过补丁
+_internal_instructor_patched = False
+
+
+def _patch_internal_instructor_for_md_json() -> None:
+    """对 CrewAI 的 InternalInstructor 打补丁，使其对不支持 tool_choice 的模型使用 MD_JSON 模式.
+
+    问题根因：
+      CrewAI 在处理 output_pydantic 时，通过 InternalInstructor 调用
+      instructor.from_litellm(completion)，默认使用 TOOLS 模式。
+      TOOLS 模式会添加 tool_choice={"type":"function","function":{...}}，
+      而 Kimi-K2.5 等模型不支持这种指定函数名的 tool_choice，导致 BadRequestError。
+
+    解决方案：
+      Monkey-patch InternalInstructor.__init__，对不支持的模型改用 MD_JSON 模式，
+      该模式通过 prompt 约束输出 JSON，不使用 function calling。
+    """
+    global _internal_instructor_patched
+    if _internal_instructor_patched:
+        return
+
+    try:
+        import instructor
+        from crewai.utilities import internal_instructor as _ii_module
+
+        _original_init = _ii_module.InternalInstructor.__init__
+
+        def _patched_init(self, content, model, agent=None, llm=None):  # type: ignore[no-untyped-def]
+            # 先执行原始 __init__ 逻辑（不调用 super，直接复制关键逻辑）
+            from litellm import completion as litellm_completion
+
+            self.content = content
+            self.agent = agent
+            self.model = model
+            self.llm = llm or (
+                agent.function_calling_llm or agent.llm if agent else None
+            )
+
+            # 判断当前模型是否支持 tool_choice 指定函数名
+            current_model = ""
+            if self.llm is not None:
+                if isinstance(self.llm, str):
+                    current_model = self.llm
+                elif hasattr(self.llm, "model"):
+                    current_model = self.llm.model or ""
+
+            needs_md_json = not _model_supports_tool_choice_function(current_model)
+
+            with _ii_module.suppress_warnings():
+                if (
+                    self.llm is not None
+                    and hasattr(self.llm, "is_litellm")
+                    and self.llm.is_litellm
+                ):
+                    if needs_md_json:
+                        # 对不支持 tool_choice 指定函数名的模型，使用 MD_JSON 模式
+                        # MD_JSON 通过 prompt 约束输出 JSON，不使用 function calling
+                        self._client = instructor.from_litellm(
+                            litellm_completion, mode=instructor.Mode.MD_JSON
+                        )
+                        log.info(
+                            f"[InternalInstructor] 模型 {current_model} 不支持 tool_choice 指定函数，"
+                            f"已切换到 MD_JSON 模式"
+                        )
+                    else:
+                        self._client = instructor.from_litellm(litellm_completion)
+                else:
+                    self._client = self._create_instructor_client()
+
+        _ii_module.InternalInstructor.__init__ = _patched_init  # type: ignore[method-assign]
+        _internal_instructor_patched = True
+        log.info("已对 InternalInstructor 应用 MD_JSON 兼容补丁")
+
+    except Exception as e:
+        log.warning(f"InternalInstructor 补丁应用失败（将使用原始行为）: {e}")
+
+
 def build_crewai_llm(tier: str = "default") -> "LLM | None":
     """构建 CrewAI LLM 实例，供 CrewAI Agent 使用.
 
     复用 _get_tier_config 的三级调度逻辑，避免与 crew.py 中重复配置。
     若主 MODEL 未配置则返回 None（使用 CrewAI 默认）。
 
-    对不支持 tool_choice 指定函数名的模型（如 Kimi-K2.5），自动启用
-    LiteLLM 的 drop_params=True，丢弃不兼容参数，避免 BadRequestError。
+    对不支持 tool_choice 指定函数名的模型（如 Kimi-K2.5），自动通过
+    monkey-patch InternalInstructor 切换到 MD_JSON 模式，避免 BadRequestError。
 
     Args:
         tier: 模型档位 (\"light\" / \"default\" / \"tool_only\")
@@ -161,13 +238,12 @@ def build_crewai_llm(tier: str = "default") -> "LLM | None":
         kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         log.info("已关闭 LLM thinking 模式")
 
-    # 兼容不支持 tool_choice 指定函数名的模型（如 Kimi-K2.5）
-    # CrewAI 使用 output_pydantic 时会传递 tool_choice={"type":"function",...}
-    # drop_params=True 让 LiteLLM 自动丢弃模型不支持的参数，避免 BadRequestError
+    # 对不支持 tool_choice 指定函数名的模型，应用 InternalInstructor 补丁
+    # 使其在处理 output_pydantic 时使用 MD_JSON 模式而非 TOOLS 模式
     if not _model_supports_tool_choice_function(model_name):
-        kwargs["drop_params"] = True
+        _patch_internal_instructor_for_md_json()
         log.info(
-            f"模型 {model_name} 不支持 tool_choice 指定函数，已启用 drop_params 兼容模式"
+            f"模型 {model_name} 不支持 tool_choice 指定函数，已启用 MD_JSON 兼容模式"
         )
 
     log.info(
