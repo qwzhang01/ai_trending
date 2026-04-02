@@ -339,10 +339,15 @@ class ReportWritingCrew:
 
     @task
     def write_report_task(self) -> Task:
-        """日报撰写 Task，输出结构化 ReportOutput。"""
+        """日报撰写 Task。
+
+        注意：不使用 output_pydantic，避免 GLM-4/DeepSeek 等非 OpenAI 模型
+        在处理大 Prompt（writing_brief + editorial_plan + style_guidance）
+        + JSON Schema 约束时挂起（无响应、不报错）。
+        run() 方法中已有 raw 文本兜底逻辑，直接从 result.raw 构造 ReportOutput。
+        """
         return Task(
             config=self.tasks_config["write_report_task"],  # type: ignore[index]
-            output_pydantic=ReportOutput,
         )
 
     @crew

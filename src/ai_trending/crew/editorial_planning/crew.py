@@ -92,10 +92,15 @@ class EditorialPlanningCrew:
 
     @task
     def plan_editorial_task(self) -> Task:
-        """选题规划 Task — 输出 EditorialPlan。"""
+        """选题规划 Task — 输出 EditorialPlan。
+
+        注意：不使用 output_pydantic，避免 DeepSeek/GLM-4 等非 OpenAI 模型
+        在同时处理工具调用（tools）和 JSON Schema 约束时出现
+        'Tool name does not match' 错误或挂起。
+        _extract_plan() 方法中已有 raw 文本兜底逻辑。
+        """
         return Task(
             config=self.tasks_config["plan_editorial_task"],  # type: ignore[index]
-            output_pydantic=EditorialPlan,
         )
 
     @crew
