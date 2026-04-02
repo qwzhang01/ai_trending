@@ -14,6 +14,11 @@
     "activepieces/activepieces": "2026-04-02",
     "mcp-use/mcp-use": "2026-04-02",
     "alibaba/OpenSandbox": "2026-04-02",
-    "Panniantong/Agent-Reach": "2026-04-02"
+    "Panniantong/Agent-Reach": "2026-04-02",
+    "saturndec/waoowaoo": "2026-04-02",
+    "GLips/Figma-Context-MCP": "2026-04-02",
+    "googleapis/genai-toolbox": "2026-04-02",
+    "awslabs/mcp": "2026-04-02",
+    "iflytek/astron-agent": "2026-04-02"
   }
 }
