@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from datetime import datetime
 from typing import Any
 
@@ -123,23 +124,29 @@ class GitHubTrendingOrchestrator:
     # ── Step 实现 ────────────────────────────────────────────
 
     def _run_keyword_planning(self, query: str, current_date: str) -> list[str]:
-        """Step 1：KeywordPlanningCrew 规划关键词，失败时使用兜底策略。"""
+        """Step 1：KeywordPlanningCrew 规划关键词，失败时使用尺底策略。"""
+        t0 = time.perf_counter()
         try:
             result = (
                 KeywordPlanningCrew()
                 .crew()
                 .kickoff(inputs={"query": query, "current_date": current_date})
             )
+            elapsed = time.perf_counter() - t0
             plan = self._extract_pydantic_output(result, GitHubSearchPlan)
             if plan and plan.keywords:
                 keywords = sanitize_keywords(plan.keywords, query)
-                log.info(f"CrewAI 关键词规划成功: {query} -> {keywords}")
+                log.info(
+                    f"CrewAI 关键词规划成功（{elapsed:.2f}s）: {query} -> {keywords}"
+                )
                 return keywords
+            log.warning(f"CrewAI 关键词规划返回空结果（{elapsed:.2f}s）")
         except Exception as e:
-            log.warning(f"CrewAI 关键词规划失败: {e}")
+            elapsed = time.perf_counter() - t0
+            log.warning(f"CrewAI 关键词规划失败（{elapsed:.2f}s）: {e}")
 
         fallback = default_keywords_for_query(query)
-        log.info(f"关键词规划使用兜底策略: {query} -> {fallback}")
+        log.info(f"关键词规划使用尺底策略: {query} -> {fallback}")
         return fallback
 
     def _run_trend_ranking(
@@ -150,6 +157,7 @@ class GitHubTrendingOrchestrator:
         candidates_json: str,
     ) -> GitHubTrendRanking | None:
         """Step 3：TrendRankingCrew 趋势分析与重排行。"""
+        t0 = time.perf_counter()
         try:
             result = (
                 TrendRankingCrew()
@@ -163,14 +171,17 @@ class GitHubTrendingOrchestrator:
                     }
                 )
             )
+            elapsed = time.perf_counter() - t0
             ranking = self._extract_pydantic_output(result, GitHubTrendRanking)
             if ranking:
                 log.info(
-                    f"CrewAI 趋势分析成功: 产出 {len(ranking.ranked_repos)} 个排序结果"
+                    f"CrewAI 趋势分析成功（{elapsed:.2f}s）: 产出 {len(ranking.ranked_repos)} 个排序结果"
                 )
                 return ranking
+            log.warning(f"CrewAI 趋势分析返回空结果（{elapsed:.2f}s）")
         except Exception as e:
-            log.warning(f"CrewAI 趋势分析失败: {e}")
+            elapsed = time.perf_counter() - t0
+            log.warning(f"CrewAI 趋势分析失败（{elapsed:.2f}s）: {e}")
         return None
 
     # ── CrewOutput 解析辅助 ───────────────────────────────────
@@ -241,7 +252,7 @@ class GitHubTrendingOrchestrator:
         适用场景：命令行调用、脚本直接运行、单元测试。
 
         Args:
-            query: 用户主题，例如 "AI"、"MCP"、"AI Agent"
+            query: 用户主题，例如 'AI'、'MCP'、'AI Agent'
             top_n:  期望输出数量（3-5）
 
         Returns:
@@ -252,21 +263,26 @@ class GitHubTrendingOrchestrator:
             orchestrator = GitHubTrendingOrchestrator()
             print(orchestrator.run_as_agent(query="MCP", top_n=5))
         """
-        log.info(f"[run_as_agent] 开始执行，主题='{query}', top_n={top_n}")
+        t0 = time.perf_counter()
+        log.info(f"[run_as_agent] ⏱ 开始执行，主题='{query}', top_n={top_n}")
         try:
             final_repos, summary, hot_signals, keywords = self.run(
                 query=query, top_n=top_n
             )
         except Exception as e:
-            log.error(f"[run_as_agent] 执行失败: {e}")
+            elapsed = time.perf_counter() - t0
+            log.error(f"[run_as_agent] ⏱ 执行失败（{elapsed:.2f}s）: {e}")
             return f"❌ GitHub 趋势发现失败: {e}"
 
+        elapsed = time.perf_counter() - t0
         if not final_repos:
+            log.warning(f"[run_as_agent] ⏱ 未搜索到结果（{elapsed:.2f}s）")
             return (
                 f"未能从 GitHub 搜索到与 '{query}' 相关的热门仓库。\n"
                 "请检查网络连接、GITHUB_TRENDING_TOKEN 或模型配置。"
             )
 
+        log.info(f"[run_as_agent] ⏱ 全流程完成，总耗时 {elapsed:.2f}s")
         return format_text_output(final_repos, query, keywords, summary, hot_signals)
 
     # ── LangGraph Tool 入口 ───────────────────────────────────

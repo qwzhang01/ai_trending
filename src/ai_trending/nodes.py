@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from ai_trending.crew.report_writing.models import WritingBrief
@@ -226,26 +227,37 @@ def collect_github_node(state: dict[str, Any]) -> dict[str, Any]:
     直接调用 GitHubTrendingTool，由工具内部使用 CrewAI 完成关键词规划、趋势分析和重排行。
     """
     current_date = state.get("current_date", "")
-    log.info(f"[collect_github] 开始采集 GitHub 热门 AI 项目 ({current_date})")
+    t0 = time.perf_counter()
+    log.info(f"[collect_github] ⏱ 开始采集 GitHub 热门 AI 项目 ({current_date})")
 
     try:
         from ai_trending.tools.github_trending_tool import GitHubTrendingTool
 
         tool = GitHubTrendingTool()
+        t1 = time.perf_counter()
+        log.info(
+            f"[collect_github] ⏱ GitHubTrendingTool 初始化耗时 {t1 - t0:.2f}s，开始执行..."
+        )
         github_summary = tool._run(query="AI", top_n=5)
+        t2 = time.perf_counter()
 
         if not github_summary or github_summary.startswith("未能"):
-            log.error("[collect_github] GitHubTrendingTool 未返回有效数据")
+            log.error(
+                f"[collect_github] ⏱ GitHubTrendingTool 未返回有效数据，总耗时 {t2 - t0:.2f}s"
+            )
             return {
                 "github_data": "GitHub 数据采集失败，无可用数据。",
                 "errors": ["GitHub 数据采集: GitHubTrendingTool 未返回有效数据"],
             }
 
-        log.info(f"[collect_github] 完成, 输出 {len(github_summary)} 字符")
+        log.info(
+            f"[collect_github] ⏱ 完成，输出 {len(github_summary)} 字符，总耗时 {t2 - t0:.2f}s"
+        )
         return {"github_data": github_summary}
 
     except Exception as e:
-        log.error(f"[collect_github] 异常: {e}")
+        elapsed = time.perf_counter() - t0
+        log.error(f"[collect_github] ⏱ 异常（耗时 {elapsed:.2f}s）: {e}")
         return {
             "github_data": f"GitHub 数据采集异常: {e}",
             "errors": [f"collect_github: {e}"],
@@ -259,26 +271,37 @@ def collect_news_node(state: dict[str, Any]) -> dict[str, Any]:
     直接返回已筛选好的新闻摘要，无需在节点层再做 LLM 处理。
     """
     current_date = state.get("current_date", "")
-    log.info(f"[collect_news] 开始采集 AI 行业新闻 ({current_date})")
+    t0 = time.perf_counter()
+    log.info(f"[collect_news] ⏱ 开始采集 AI 行业新闻 ({current_date})")
 
     try:
         from ai_trending.tools.ai_news_tool import AINewsTool
 
+        t1 = time.perf_counter()
+        log.info(
+            f"[collect_news] ⏱ AINewsTool 初始化完成（{t1 - t0:.2f}s），开始抓取+筛选..."
+        )
         # 一次调用，内部并发抓取 HN / Reddit / newsdata.io / 知乎，并由 CrewAI Agent 筛选
         news_summary = AINewsTool()._run(keywords="AI,LLM,AI Agent,大模型", top_n=30)
+        t2 = time.perf_counter()
 
         if not news_summary or news_summary.startswith("❌"):
-            log.error(f"[collect_news] AINewsTool 返回失败: {news_summary}")
+            log.error(
+                f"[collect_news] ⏱ AINewsTool 返回失败（耗时 {t2 - t0:.2f}s）: {news_summary}"
+            )
             return {
                 "news_data": "新闻数据采集失败，无可用数据。",
                 "errors": [f"新闻数据采集: {news_summary}"],
             }
 
-        log.info(f"[collect_news] 完成, 输出 {len(news_summary)} 字符")
+        log.info(
+            f"[collect_news] ⏱ 完成，输出 {len(news_summary)} 字符，总耗时 {t2 - t0:.2f}s"
+        )
         return {"news_data": news_summary}
 
     except Exception as e:
-        log.error(f"[collect_news] 异常: {e}")
+        elapsed = time.perf_counter() - t0
+        log.error(f"[collect_news] ⏱ 异常（耗时 {elapsed:.2f}s）: {e}")
         return {
             "news_data": f"新闻数据采集异常: {e}",
             "errors": [f"collect_news: {e}"],
@@ -295,7 +318,8 @@ def score_trends_node(state: dict[str, Any]) -> dict[str, Any]:
     github_data = state.get("github_data", "无数据")
     news_data = state.get("news_data", "无数据")
 
-    log.info("[score_trends] 开始结构化评分")
+    t0 = time.perf_counter()
+    log.info("[score_trends] ⏱ 开始结构化评分")
 
     try:
         from ai_trending.crew.trend_scoring import TrendScoringCrew
@@ -305,6 +329,7 @@ def score_trends_node(state: dict[str, Any]) -> dict[str, Any]:
             news_data=news_data,
             current_date=current_date,
         )
+        elapsed = time.perf_counter() - t0
 
         import json
 
@@ -315,14 +340,18 @@ def score_trends_node(state: dict[str, Any]) -> dict[str, Any]:
         merged_usage = _merge_token_usage(prev_usage, token_usage, "score_trends")
 
         log.info(
-            f"[score_trends] 完成，项目评分 {len(output.scored_repos)} 条，"
+            f"[score_trends] ⏱ 完成，项目评分 {len(output.scored_repos)} 条，"
             f"新闻评分 {len(output.scored_news)} 条，"
-            f"token 用量 {token_usage.get('total_tokens', 0)}"
+            f"token 用量 {token_usage.get('total_tokens', 0)}，"
+            f"耗时 {elapsed:.2f}s"
         )
         return {"scoring_result": scoring_result, "token_usage": merged_usage}
 
     except Exception as e:
-        log.error(f"[score_trends] TrendScoringCrew 调用失败: {e}")
+        elapsed = time.perf_counter() - t0
+        log.error(
+            f"[score_trends] ⏱ TrendScoringCrew 调用失败（耗时 {elapsed:.2f}s）: {e}"
+        )
         # 评分失败时，使用空 JSON 确保下游节点仍可运行
         fallback = '{"scored_repos": [], "scored_news": [], "daily_summary": {"top_trend": "评分数据不可用", "hot_directions": [], "overall_sentiment": "中性"}}'
         return {
@@ -342,7 +371,8 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
     current_date = state.get("current_date", "")
     scoring_result = state.get("scoring_result", "{}")
 
-    log.info(f"[editorial_planning] 开始编辑选题规划 ({current_date})")
+    t0 = time.perf_counter()
+    log.info(f"[editorial_planning] ⏱ 开始编辑选题规划 ({current_date})")
 
     # 获取近期话题上下文（失败时返回空字符串，不阻断）
     # 注意：EditorialPlanningCrew 的 Agent 现在通过工具主动查询话题，
@@ -368,6 +398,7 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
             current_date=current_date,
             topic_context=topic_context,
         )
+        elapsed = time.perf_counter() - t0
 
         editorial_plan_text = plan.format_for_prompt()
 
@@ -376,9 +407,10 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
         merged_usage = _merge_token_usage(prev_usage, token_usage, "editorial_planning")
 
         log.info(
-            f"[editorial_planning] 完成: signal={plan.signal_strength}, "
+            f"[editorial_planning] ⏱ 完成: signal={plan.signal_strength}, "
             f"headline={plan.headline.chosen_item}, "
-            f"token 用量 {token_usage.get('total_tokens', 0)}"
+            f"token 用量 {token_usage.get('total_tokens', 0)}，"
+            f"耗时 {elapsed:.2f}s"
         )
         return {
             "editorial_plan": editorial_plan_text,
@@ -390,7 +422,10 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
         }
 
     except Exception as e:
-        log.error(f"[editorial_planning] EditorialPlanningCrew 失败: {e}")
+        elapsed = time.perf_counter() - t0
+        log.error(
+            f"[editorial_planning] ⏱ EditorialPlanningCrew 失败（耗时 {elapsed:.2f}s）: {e}"
+        )
         return {
             "editorial_plan": "",
             "errors": [f"editorial_planning: EditorialPlanningCrew 失败: {e}"],
@@ -411,7 +446,8 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
     scoring_result = state.get("scoring_result", "{}")
     editorial_plan = state.get("editorial_plan", "")
 
-    log.info(f"[write_report] 开始撰写日报 ({current_date})")
+    t0 = time.perf_counter()
+    log.info(f"[write_report] ⏱ 开始撰写日报 ({current_date})")
 
     # 构建写作简报（WritingBrief）
     writing_brief = _build_writing_brief(scoring_result, github_data, news_data)
@@ -428,25 +464,34 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
         log.info("[write_report] 无 EditorialPlan，写作层将自行决定编辑方向")
 
     # 获取风格记忆指导（失败不阻断主流程）
+    t_style = time.perf_counter()
     style_guidance = ""
     try:
         from ai_trending.crew.report_writing.style_memory import StyleMemory
 
         style_guidance = StyleMemory().get_style_guidance()
         if style_guidance and "无风格记忆" not in style_guidance:
-            log.info("[write_report] 已获取风格记忆指导")
+            log.info(
+                f"[write_report] ⏱ 已获取风格记忆指导（{time.perf_counter() - t_style:.2f}s）"
+            )
         else:
-            log.info("[write_report] 无风格记忆记录")
+            log.info(
+                f"[write_report] ⏱ 无风格记忆记录（{time.perf_counter() - t_style:.2f}s）"
+            )
     except Exception as e:
         log.warning(f"[write_report] StyleMemory 获取失败，跳过风格记忆: {e}")
 
     # 获取上期回顾追踪数据（失败时返回空字符串，不阻断主流程）
+    t_tracker = time.perf_counter()
     previous_report_context = ""
     try:
         from ai_trending.crew.report_writing.tracker import PreviousReportTracker
 
         previous_report_context = PreviousReportTracker().get_previous_report_context(
             current_date
+        )
+        log.info(
+            f"[write_report] ⏱ PreviousReportTracker 耗时 {time.perf_counter() - t_tracker:.2f}s"
         )
     except Exception as e:
         log.warning(f"[write_report] 上期回顾数据获取失败，将省略该 Section: {e}")
@@ -456,6 +501,8 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
     try:
         from ai_trending.crew.report_writing import ReportWritingCrew
 
+        t_crew = time.perf_counter()
+        log.info("[write_report] ⏱ ReportWritingCrew 开始执行...")
         output, token_usage = ReportWritingCrew().run(
             github_data=github_data,
             news_data=news_data,
@@ -466,6 +513,7 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
             editorial_plan=editorial_plan,
             style_guidance=style_guidance,
         )
+        t_crew_done = time.perf_counter()
 
         report = output.content
 
@@ -481,8 +529,11 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
         prev_usage = state.get("token_usage") or {}
         merged_usage = _merge_token_usage(prev_usage, token_usage, "write_report")
 
+        elapsed_total = time.perf_counter() - t0
         log.info(
-            f"[write_report] 完成，报告已保存到 {report_file} ({len(report)} 字符)，"
+            f"[write_report] ⏱ 完成，报告已保存到 {report_file} ({len(report)} 字符)，"
+            f"ReportWritingCrew 耗时 {t_crew_done - t_crew:.2f}s，"
+            f"节点总耗时 {elapsed_total:.2f}s，"
             f"token 用量 {token_usage.get('total_tokens', 0)}"
         )
 
@@ -534,7 +585,8 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
         return result
 
     except Exception as e:
-        log.error(f"[write_report] 报告撰写失败: {e}")
+        elapsed = time.perf_counter() - t0
+        log.error(f"[write_report] ⏱ 报告撰写失败（耗时 {elapsed:.2f}s）: {e}")
         return {
             "report_content": f"# 🤖 AI 日报 · {current_date}\n\n报告生成失败: {e}",
             "errors": [f"write_report: ReportWritingCrew 失败: {e}"],
@@ -552,7 +604,8 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
     report_content = state.get("report_content", "")
     scoring_result = state.get("scoring_result", "{}")
 
-    log.info(f"[quality_review] 开始质量审核 ({current_date})")
+    t0 = time.perf_counter()
+    log.info(f"[quality_review] ⏱ 开始质量审核 ({current_date})")
 
     if not report_content or (
         report_content.startswith("# 🤖 AI 日报") and "报告生成失败" in report_content
@@ -572,6 +625,7 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
             current_date=current_date,
             writing_brief=state.get("writing_brief_text", ""),
         )
+        elapsed = time.perf_counter() - t0
 
         # 格式化审核摘要
         review_summary = review_result.format_summary()
@@ -581,10 +635,11 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
         merged_usage = _merge_token_usage(prev_usage, token_usage, "quality_review")
 
         log.info(
-            f"[quality_review] 完成: passed={review_result.passed}, "
+            f"[quality_review] ⏱ 完成: passed={review_result.passed}, "
             f"issues={len(review_result.issues)} "
             f"(error={review_result.error_count}, warning={review_result.warning_count}), "
-            f"token 用量 {token_usage.get('total_tokens', 0)}"
+            f"token 用量 {token_usage.get('total_tokens', 0)}，"
+            f"耗时 {elapsed:.2f}s"
         )
 
         # 审核未通过时只记录 warning，不阻断发布
@@ -641,7 +696,8 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
         return result
 
     except Exception as e:
-        log.error(f"[quality_review] 质量审核异常: {e}")
+        elapsed = time.perf_counter() - t0
+        log.error(f"[quality_review] ⏱ 质量审核异常（耗时 {elapsed:.2f}s）: {e}")
         return {
             "quality_review": f"质量审核异常: {e}",
             "errors": [f"quality_review: {e}"],
@@ -658,6 +714,7 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
     author_name = state.get("author_name", "AI Trending Bot")
     article_title = f"AI 日报 | {current_date} 最热 AI 开源项目与行业新闻"
 
+    t0 = time.perf_counter()
     publish_results: list[str] = []
 
     if (
@@ -669,6 +726,7 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
         return {"publish_results": ["跳过发布: 报告内容无效"]}
 
     # --- Step 1: GitHub 发布 ---
+    t_gh = time.perf_counter()
     try:
         from ai_trending.tools.github_publish_tool import GitHubPublishTool
 
@@ -678,13 +736,18 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
             commit_message=f"AI Trending Report - {current_date}",
         )
         first_line = result.splitlines()[0] if result else ""
-        log.info(f"[publish] GitHub: {first_line}")
+        log.info(
+            f"[publish] ⏱ GitHub 发布完成（{time.perf_counter() - t_gh:.2f}s）: {first_line}"
+        )
         publish_results.append(f"GitHub: {first_line}")
     except Exception as e:
-        log.error(f"[publish] GitHub 发布失败: {e}")
+        log.error(
+            f"[publish] ⏱ GitHub 发布失败（{time.perf_counter() - t_gh:.2f}s）: {e}"
+        )
         publish_results.append(f"GitHub: 失败 - {e}")
 
     # --- Step 2: 微信公众号 HTML + 草稿箱 ---
+    t_wx = time.perf_counter()
     try:
         from ai_trending.tools.wechat_publish_tool import WeChatPublishTool
 
@@ -695,10 +758,14 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
             author=author_name,
         )
         first_line = wechat_result.splitlines()[0] if wechat_result else ""
-        log.info(f"[publish] 微信HTML: {first_line}")
+        log.info(
+            f"[publish] ⏱ 微信HTML 完成（{time.perf_counter() - t_wx:.2f}s）: {first_line}"
+        )
         publish_results.append(f"微信HTML: {first_line}")
     except Exception as e:
-        log.error(f"[publish] 微信 HTML 生成失败: {e}")
+        log.error(
+            f"[publish] ⏱ 微信 HTML 生成失败（{time.perf_counter() - t_wx:.2f}s）: {e}"
+        )
         publish_results.append(f"微信HTML: 失败 - {e}")
 
     # Post-publish hook: 发布完成后记录好表达模式（OPT-006）
@@ -706,6 +773,8 @@ def publish_node(state: dict[str, Any]) -> dict[str, Any]:
     if any_success:
         _record_successful_patterns(state)
 
+    elapsed_total = time.perf_counter() - t0
+    log.info(f"[publish] ⏱ 发布节点总耗时 {elapsed_total:.2f}s")
     return {"publish_results": publish_results}
 
 

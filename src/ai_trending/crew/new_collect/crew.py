@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import datetime
 
 from crewai import Agent, Crew, Process, Task
@@ -97,18 +98,24 @@ class NewsCollectCrew:
         Returns:
             格式化的新闻摘要字符串；若抓取失败则返回错误提示。
         """
-        log.info(f"[NewsCollectCrew] 开始采集，关键词: {self.keywords}")
+        t0 = time.perf_counter()
+        log.info(f"[NewsCollectCrew] ⏱ 开始采集，关键词: {self.keywords}")
 
         # Step 1: 并发抓取原始新闻
+        t_fetch = time.perf_counter()
         fetcher = NewsFetcher()
         news_list, source_stats = fetcher.fetch(self.keywords, self.top_n)
+        t_fetch_done = time.perf_counter()
 
         if not news_list:
-            log.warning("[NewsCollectCrew] 所有新闻源均未返回数据")
+            log.warning(
+                f"[NewsCollectCrew] ⏱ 所有新闻源均未返回数据（抓取耗时 {t_fetch_done - t_fetch:.2f}s）"
+            )
             return "未能获取到最新的 AI 相关新闻。请检查网络连接。"
 
         log.info(
-            f"[NewsCollectCrew] 抓取完成: {' | '.join(source_stats)}，共 {len(news_list)} 条"
+            f"[NewsCollectCrew] ⏱ 抓取完成（{t_fetch_done - t_fetch:.2f}s）: "
+            f"{' | '.join(source_stats)}，共 {len(news_list)} 条"
         )
 
         # Step 2: 将原始数据序列化为文本，供 Agent 筛选
@@ -116,6 +123,7 @@ class NewsCollectCrew:
         current_date = datetime.now().strftime("%Y-%m-%d")
 
         # Step 3: CrewAI Agent 筛选（通过 kickoff(inputs=) 注入动态数据）
+        t_llm = time.perf_counter()
         try:
             result = self.crew().kickoff(
                 inputs={
@@ -123,11 +131,18 @@ class NewsCollectCrew:
                     "current_date": current_date,
                 }
             )
+            t_llm_done = time.perf_counter()
             output = str(result).strip()
-            log.info(f"[NewsCollectCrew] 筛选完成，输出 {len(output)} 字符")
+            log.info(
+                f"[NewsCollectCrew] ⏱ LLM 筛选完成（{t_llm_done - t_llm:.2f}s），"
+                f"输出 {len(output)} 字符，节点总耗时 {t_llm_done - t0:.2f}s"
+            )
             return output
         except Exception as e:
-            log.error(f"[NewsCollectCrew] CrewAI 筛选失败，降级返回原始数据: {e}")
+            elapsed = time.perf_counter() - t0
+            log.error(
+                f"[NewsCollectCrew] ⏱ CrewAI 筛选失败（耗时 {elapsed:.2f}s），降级返回原始数据: {e}"
+            )
             # 降级：直接返回格式化的原始抓取结果
             return self._format_fallback(news_list)
 

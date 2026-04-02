@@ -104,6 +104,24 @@ class TrendScoringCrew:
             verbose=False,
         )
 
+    @staticmethod
+    def _fix_double_encoded_fields(data: dict) -> dict:
+        """修复 GLM 等模型将嵌套对象二次 JSON 序列化的问题。
+
+        GLM 模型在 tool_call arguments 中有时会把嵌套对象序列化为字符串，
+        例如 daily_summary 变成 '{"top_trend": "..."}' 而非 dict。
+        此方法对已知的嵌套对象字段做反序列化预处理。
+        """
+        for field in ("daily_summary",):
+            val = data.get(field)
+            if isinstance(val, str) and val.strip().startswith("{"):
+                try:
+                    data[field] = json.loads(val)
+                    log.debug(f"[TrendScoringCrew] 修复 double-encoded 字段: {field}")
+                except json.JSONDecodeError:
+                    pass  # 保持原值，让 Pydantic 报错
+        return data
+
     def _parse_from_raw(self, raw: str) -> TrendScoringOutput | None:
         """从原始文本中兜底解析 TrendScoringOutput。"""
         if not raw:
@@ -113,6 +131,7 @@ class TrendScoringCrew:
             json_match = re.search(r"\{.*\}", raw.strip(), re.DOTALL)
             if json_match:
                 data = json.loads(json_match.group(0))
+                data = self._fix_double_encoded_fields(data)
                 return TrendScoringOutput.model_validate(data)
         except Exception as e:
             log.warning(f"[TrendScoringCrew] raw 文本解析失败: {e}")
@@ -159,9 +178,11 @@ class TrendScoringCrew:
                 if last.pydantic and isinstance(last.pydantic, TrendScoringOutput):
                     output = last.pydantic
 
-            # 兜底：从 raw 文本解析 JSON
+            # 兜底：从 raw 文本解析 JSON（含 double-encode 修复）
             if output is None:
                 raw = result.raw or ""
+                if not raw and result.tasks_output:
+                    raw = result.tasks_output[-1].raw or ""
                 output = self._parse_from_raw(raw)
                 if output is None:
                     log.warning(
@@ -178,5 +199,41 @@ class TrendScoringCrew:
             return output, token_usage
 
         except Exception as e:
+            # 检查是否是 GLM double-encode 导致的 Pydantic ValidationError
+            # 此时 CrewAI 内部解析失败，但 LLM 实际上已经返回了正确数据
+            err_str = str(e)
+            if "daily_summary" in err_str and "Input should be an object" in err_str:
+                log.warning(
+                    f"[TrendScoringCrew] 检测到 GLM double-encode 问题，尝试从 raw 兜底解析: {e}"
+                )
+                # 尝试从异常信息中提取 raw JSON 并修复
+                try:
+                    # 从异常的 completion 中提取 arguments
+                    raw_match = re.search(
+                        r'"arguments"\s*:\s*\'(\{.*?\})\'',
+                        err_str,
+                        re.DOTALL,
+                    )
+                    if not raw_match:
+                        # 尝试另一种格式
+                        raw_match = re.search(
+                            r"(\{.*\"scored_repos\".*\})", err_str, re.DOTALL
+                        )
+                    if raw_match:
+                        data = json.loads(raw_match.group(1))
+                        data = self._fix_double_encoded_fields(data)
+                        output = TrendScoringOutput.model_validate(data)
+                        log.info(
+                            f"[TrendScoringCrew] double-encode 修复成功，"
+                            f"项目 {len(output.scored_repos)} 条，新闻 {len(output.scored_news)} 条"
+                        )
+                        return output, {
+                            "prompt_tokens": 0,
+                            "completion_tokens": 0,
+                            "total_tokens": 0,
+                            "successful_requests": 0,
+                        }
+                except Exception as fix_e:
+                    log.warning(f"[TrendScoringCrew] double-encode 修复失败: {fix_e}")
             log.error(f"[TrendScoringCrew] 评分失败: {e}")
             raise

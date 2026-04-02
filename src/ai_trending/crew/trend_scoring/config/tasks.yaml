@@ -13,6 +13,8 @@ score_trends_task:
     - 只对上方数据中真实存在的项目和新闻评分，绝不虚构任何项目名称、仓库地址或新闻标题
     - repo 字段必须与原始数据中的仓库路径完全一致（格式：owner/repo_name）
     - 如果原始数据为空或无效，scored_repos / scored_news 返回空数组
+    - daily_summary 必须是一个 JSON 对象（嵌套在外层 JSON 中），绝对不能是字符串或被引号包裹的 JSON 字符串
+    - 所有嵌套字段（daily_summary、scores 等）都必须是 JSON 对象，不能是字符串
 
     ## 对每个 GitHub 项目的评分要求
 
