@@ -103,11 +103,40 @@ def call_llm_with_usage(
     return content.strip(), usage_info
 
 
+# 不支持 tool_choice 指定具体函数名的模型关键词列表
+# 这些模型在 CrewAI 使用 output_pydantic 时会报错：
+# "Specifying functions for tool_choice is not yet supported"
+_MODELS_WITHOUT_TOOL_CHOICE_FUNCTION = [
+    "kimi",
+    "moonshot",
+    "moonshotai",
+]
+
+
+def _model_supports_tool_choice_function(model_name: str) -> bool:
+    """判断模型是否支持 tool_choice 指定具体函数名.
+
+    部分模型（如 Kimi-K2.5）不支持 tool_choice={"type": "function", "function": {...}}，
+    CrewAI 在使用 output_pydantic 时会自动传递此参数，导致报错。
+
+    Args:
+        model_name: LiteLLM 格式的模型名称，如 "Pro/moonshotai/Kimi-K2.5"
+
+    Returns:
+        True 表示支持，False 表示不支持（需要兼容处理）
+    """
+    model_lower = model_name.lower()
+    return not any(kw in model_lower for kw in _MODELS_WITHOUT_TOOL_CHOICE_FUNCTION)
+
+
 def build_crewai_llm(tier: str = "default") -> "LLM | None":
     """构建 CrewAI LLM 实例，供 CrewAI Agent 使用.
 
     复用 _get_tier_config 的三级调度逻辑，避免与 crew.py 中重复配置。
     若主 MODEL 未配置则返回 None（使用 CrewAI 默认）。
+
+    对不支持 tool_choice 指定函数名的模型（如 Kimi-K2.5），自动启用
+    LiteLLM 的 drop_params=True，丢弃不兼容参数，避免 BadRequestError。
 
     Args:
         tier: 模型档位 (\"light\" / \"default\" / \"tool_only\")
@@ -122,7 +151,8 @@ def build_crewai_llm(tier: str = "default") -> "LLM | None":
         return None
 
     config = _get_tier_config(tier)
-    kwargs: dict = {"model": config["model"], "temperature": config["temperature"]}
+    model_name: str = config["model"]
+    kwargs: dict = {"model": model_name, "temperature": config["temperature"]}
 
     if llm_cfg.api_base:
         kwargs["base_url"] = llm_cfg.api_base
@@ -131,7 +161,16 @@ def build_crewai_llm(tier: str = "default") -> "LLM | None":
         kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         log.info("已关闭 LLM thinking 模式")
 
+    # 兼容不支持 tool_choice 指定函数名的模型（如 Kimi-K2.5）
+    # CrewAI 使用 output_pydantic 时会传递 tool_choice={"type":"function",...}
+    # drop_params=True 让 LiteLLM 自动丢弃模型不支持的参数，避免 BadRequestError
+    if not _model_supports_tool_choice_function(model_name):
+        kwargs["drop_params"] = True
+        log.info(
+            f"模型 {model_name} 不支持 tool_choice 指定函数，已启用 drop_params 兼容模式"
+        )
+
     log.info(
-        f"LLM tier={tier} → model={config['model']}, temperature={config['temperature']}"
+        f"LLM tier={tier} → model={model_name}, temperature={config['temperature']}"
     )
     return LLM(**kwargs)
