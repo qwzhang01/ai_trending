@@ -19,6 +19,11 @@
     "GLips/Figma-Context-MCP": "2026-04-02",
     "googleapis/genai-toolbox": "2026-04-02",
     "awslabs/mcp": "2026-04-02",
-    "iflytek/astron-agent": "2026-04-02"
+    "iflytek/astron-agent": "2026-04-02",
+    "google-gemini/gemini-cli": "2026-04-04",
+    "microsoft/playwright-mcp": "2026-04-04",
+    "webiny/webiny-js": "2026-04-04",
+    "0x4m4/hexstrike-ai": "2026-04-04",
+    "github/github-mcp-server": "2026-04-04"
   }
 }
