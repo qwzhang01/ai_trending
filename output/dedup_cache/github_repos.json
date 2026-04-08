@@ -39,6 +39,11 @@
     "milla-jovovich/mempalace": "2026-04-08",
     "ruvnet/ruflo": "2026-04-08",
     "netdata/netdata": "2026-04-08",
-    "triggerdotdev/trigger.dev": "2026-04-08"
+    "triggerdotdev/trigger.dev": "2026-04-08",
+    "jackwener/OpenCLI": "2026-04-09",
+    "NVIDIA/TensorRT-LLM": "2026-04-09",
+    "alibaba/spring-ai-alibaba": "2026-04-09",
+    "firecrawl/firecrawl-mcp-server": "2026-04-09",
+    "jundot/omlx": "2026-04-09"
   }
 }
