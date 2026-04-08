@@ -4,6 +4,7 @@
 
 | 日期 | 头条话题 | 覆盖关键词 | 今日一句话 |
 |------|---------|-----------|-----------|
+| 2026-04-08 | MemPalace | AI, LLM, Agent, MCP, Claude, Anthropic | AI 技术持续演进 |
 | 2026-04-07 | agency-agents | AI, Agent, MCP, Claude, Anthropic, 编程助手 | AI 技术持续演进 |
 | 2026-04-06 | Deer-Flow | AI, LLM, Agent, MCP, Claude, Anthropic, 推理, 代码生成 | AI 技术持续演进 |
 | 2026-04-04 | Gemini CLI | AI, LLM, Agent, MCP, RAG, GPT, Claude, Gemini, Mistral, OpenAI | AI 技术持续演进 |
@@ -15,7 +16,8 @@
 - agent（近3天出现3次，建议降级或换角度）
 - mcp（近3天出现3次，建议降级或换角度）
 - claude（近3天出现3次，建议降级或换角度）
-- anthropic（近3天出现2次，建议降级或换角度）
+- anthropic（近3天出现3次，建议降级或换角度）
 - llm（近3天出现2次，建议降级或换角度）
+- MemPalace（近期头条，除非有重大更新否则建议跳过）
 - agency-agents（近期头条，除非有重大更新否则建议跳过）
 - Deer-Flow（近期头条，除非有重大更新否则建议跳过）

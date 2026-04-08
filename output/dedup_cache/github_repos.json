@@ -34,6 +34,11 @@
     "mksglu/context-mode": "2026-04-07",
     "microsoft/agent-framework": "2026-04-07",
     "msitarzewski/agency-agents": "2026-04-07",
-    "modelcontextprotocol/registry": "2026-04-07"
+    "modelcontextprotocol/registry": "2026-04-07",
+    "kreuzberg-dev/kreuzberg": "2026-04-08",
+    "milla-jovovich/mempalace": "2026-04-08",
+    "ruvnet/ruflo": "2026-04-08",
+    "netdata/netdata": "2026-04-08",
+    "triggerdotdev/trigger.dev": "2026-04-08"
   }
 }
