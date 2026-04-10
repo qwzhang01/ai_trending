@@ -44,6 +44,11 @@
     "NVIDIA/TensorRT-LLM": "2026-04-09",
     "alibaba/spring-ai-alibaba": "2026-04-09",
     "firecrawl/firecrawl-mcp-server": "2026-04-09",
-    "jundot/omlx": "2026-04-09"
+    "jundot/omlx": "2026-04-09",
+    "googleapis/mcp-toolbox": "2026-04-10",
+    "dataelement/bisheng": "2026-04-10",
+    "coze-dev/coze-studio": "2026-04-10",
+    "gsd-build/get-shit-done": "2026-04-10",
+    "patchy631/ai-engineering-hub": "2026-04-10"
   }
 }
