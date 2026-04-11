@@ -49,6 +49,11 @@
     "dataelement/bisheng": "2026-04-10",
     "coze-dev/coze-studio": "2026-04-10",
     "gsd-build/get-shit-done": "2026-04-10",
-    "patchy631/ai-engineering-hub": "2026-04-10"
+    "patchy631/ai-engineering-hub": "2026-04-10",
+    "karpathy/autoresearch": "2026-04-11",
+    "code-yeongyu/oh-my-openagent": "2026-04-11",
+    "bentoml/BentoML": "2026-04-11",
+    "jamiepine/voicebox": "2026-04-11",
+    "firerpa/lamda": "2026-04-11"
   }
 }
