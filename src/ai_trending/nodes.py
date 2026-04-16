@@ -505,6 +505,35 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
     except Exception as e:
         log.warning(f"[write_report] 上期回顾数据获取失败，将省略该 Section: {e}")
 
+    # 获取近 7 天今日一句话历史（失败时返回空字符串，不阻断主流程）
+    recent_hooks = ""
+    try:
+        from ai_trending.crew.report_writing.topic_tracker import TopicTracker
+
+        hooks = TopicTracker().get_recent_hooks()
+        if hooks:
+            recent_hooks = "\n".join(f"- {h}" for h in hooks)
+            log.info(f"[write_report] 已获取近 7 天今日一句话历史，共 {len(hooks)} 条")
+        else:
+            log.info("[write_report] 无今日一句话历史记录")
+    except Exception as e:
+        log.warning(f"[write_report] 今日一句话历史获取失败，跳过: {e}")
+
+    # 获取上期行动建议验证数据（失败时返回空字符串，不阻断主流程）
+    action_verification_context = ""
+    try:
+        from ai_trending.crew.report_writing.tracker import PreviousReportTracker
+
+        action_verification_context = (
+            PreviousReportTracker().build_verification_context(current_date)
+        )
+        if action_verification_context:
+            log.info("[write_report] 已获取上期行动建议验证数据")
+        else:
+            log.info("[write_report] 无上期行动建议验证数据")
+    except Exception as e:
+        log.warning(f"[write_report] 行动建议验证数据获取失败，跳过: {e}")
+
     # 合并写作简报和编辑决策 → 不再合并，独立传递给 Crew
 
     try:
@@ -521,6 +550,8 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
             writing_brief=writing_brief_text,
             editorial_plan=editorial_plan,
             style_guidance=style_guidance,
+            recent_hooks=recent_hooks,
+            action_verification_context=action_verification_context,
         )
         t_crew_done = time.perf_counter()
 

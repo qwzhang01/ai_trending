@@ -370,6 +370,8 @@ class ReportWritingCrew:
         writing_brief: str = "",
         editorial_plan: str = "",
         style_guidance: str = "",
+        recent_hooks: str = "",
+        action_verification_context: str = "",
     ) -> tuple[ReportOutput, dict[str, int]]:
         """对外公开入口：执行日报撰写，返回 (ReportOutput, token_usage)。
 
@@ -408,6 +410,14 @@ class ReportWritingCrew:
             log.info("[ReportWritingCrew] 已注入风格记忆指导")
         else:
             log.info("[ReportWritingCrew] 无风格记忆记录")
+        if recent_hooks:
+            log.info("[ReportWritingCrew] 已注入近 7 天今日一句话历史")
+        else:
+            log.info("[ReportWritingCrew] 无今日一句话历史记录")
+        if action_verification_context:
+            log.info("[ReportWritingCrew] 已注入上期行动建议验证数据")
+        else:
+            log.info("[ReportWritingCrew] 无行动建议验证数据")
 
         try:
             result = self.crew().kickoff(
@@ -420,6 +430,10 @@ class ReportWritingCrew:
                     "editorial_plan": editorial_plan
                     or "（无编辑决策，请自行判断信号强度、头条选择和写作角度）",
                     "style_guidance": style_guidance or "（无风格记忆记录）",
+                    "recent_hooks": recent_hooks
+                    or "（无历史记录，今日一句话需自行生成有观点的判断句）",
+                    "action_verification_context": action_verification_context
+                    or "（无行动建议验证数据，请省略「行动建议验证」小节）",
                 }
             )
 

@@ -11,8 +11,79 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
+
+# 默认 TOPIC_TRACKER 路径
+_DEFAULT_TRACKER_PATH = Path("output/TOPIC_TRACKER.md")
+
+
+def _get_prev_appearances(
+    repo_name: str,
+    tracker_path: Path | None = None,
+    days: int = 7,
+) -> str:
+    """从 TOPIC_TRACKER.md 中查找项目名是否在近 N 天内出现过。
+
+    Args:
+        repo_name: 仓库名（owner/repo 或 repo 短名）
+        tracker_path: TOPIC_TRACKER.md 路径，默认 output/TOPIC_TRACKER.md
+        days: 查找窗口天数，默认 7 天
+
+    Returns:
+        描述字符串，例如：
+          - "首次上榜"
+          - "2026-04-14(头条), 2026-04-12(热点)"
+          - "数据不可用"
+    """
+    path = tracker_path or _DEFAULT_TRACKER_PATH
+    try:
+        if not path.exists():
+            return "首次上榜"
+
+        content = path.read_text(encoding="utf-8")
+        cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+        # 提取仓库短名（owner/repo → repo）
+        short_name = (
+            repo_name.split("/")[-1].lower() if "/" in repo_name else repo_name.lower()
+        )
+
+        appearances: list[str] = []
+        in_table = False
+
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("| 日期"):
+                in_table = True
+                continue
+            if stripped.startswith("|---"):
+                continue
+            if in_table and stripped.startswith("|"):
+                parts = [p.strip() for p in stripped.split("|") if p.strip()]
+                if len(parts) < 4:
+                    continue
+                row_date = parts[0]
+                row_headline = parts[1].lower()
+                row_keywords = parts[2].lower()
+                # 过滤日期窗口
+                if row_date < cutoff:
+                    continue
+                # 检查项目名是否出现在头条或关键词中
+                if short_name in row_headline:
+                    appearances.append(f"{row_date}(头条)")
+                elif short_name in row_keywords:
+                    appearances.append(f"{row_date}(热点)")
+            elif in_table and not stripped.startswith("|"):
+                in_table = False
+
+        if not appearances:
+            return "首次上榜"
+        return ", ".join(appearances)
+
+    except Exception:
+        return "数据不可用"
 
 
 def format_text_output(
@@ -88,6 +159,9 @@ def format_text_output(
             f"+{stars_growth}" if stars_growth is not None else "（暂无历史数据）"
         )
         output += f"**7日增长**: {growth_display}\n"
+        # 追加历史出现记录（从 TOPIC_TRACKER 查找）
+        prev_appearances = _get_prev_appearances(repo.get("full_name", ""))
+        output += f"**历史出现**: {prev_appearances}\n"
         output += f"🔗 {repo.get('html_url', '')}\n\n"
 
     return output

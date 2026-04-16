@@ -134,6 +134,21 @@ class TopicTracker:
 
         return kill_items
 
+    def get_recent_hooks(self, days: int = MAX_DAYS) -> list[str]:
+        """获取近 N 天的今日一句话列表，供写作层去重约束使用。
+
+        Args:
+            days: 查找窗口天数，默认 7 天
+
+        Returns:
+            按日期倒序排列的今日一句话列表（去掉空值）
+        """
+        records = self._load_records()
+        cutoff = self._cutoff_date(days)
+        recent = [r for r in records if r.date >= cutoff]
+        recent.sort(key=lambda r: r.date, reverse=True)
+        return [r.hook for r in recent if r.hook.strip()]
+
     def get_topic_context(self) -> str:
         """获取话题上下文文本，用于注入到 editorial_planning Prompt。"""
         recent = self.get_recent_topics()

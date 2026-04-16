@@ -312,3 +312,165 @@ class PreviousReportTracker:
         )
 
         return "\n".join(lines)
+
+    def parse_action_suggestions(self, report_path: Path) -> list[tuple[str, str, int]]:
+        """从报告的「本周行动建议」Section 中解析被推荐的项目名。
+
+        Args:
+            report_path: 报告文件路径
+
+        Returns:
+            list of (repo_full_name, display_name, prev_stars)
+            解析失败时返回空列表
+        """
+        try:
+            content = report_path.read_text(encoding="utf-8")
+        except Exception as e:
+            log.error(f"[PreviousReportTracker] 读取报告失败: {e}")
+            return []
+
+        # 找到「本周行动建议」Section
+        in_action_section = False
+        action_lines: list[str] = []
+        for line in content.splitlines():
+            if "## 本周行动建议" in line:
+                in_action_section = True
+                continue
+            if in_action_section:
+                # 遇到下一个 ## Section 则停止
+                if line.startswith("## ") and "本周行动建议" not in line:
+                    break
+                action_lines.append(line)
+
+        if not action_lines:
+            log.info("[PreviousReportTracker] 未找到「本周行动建议」Section")
+            return []
+
+        action_text = "\n".join(action_lines)
+
+        # 从行动建议文本中提取 GitHub 项目链接（复用 _parse_recommended_repos 的正则）
+        repos: list[tuple[str, str, int]] = []
+        seen: set[str] = set()
+
+        pattern = re.compile(
+            r"\[([^\]]+)\]\(https://github\.com/([^/\s)]+/[^/\s)]+)\)"
+            r"(?:\s*⭐\s*([\d,]+))?"
+        )
+
+        for match in pattern.finditer(action_text):
+            display_name = match.group(1).strip()
+            repo_full = match.group(2).strip().rstrip("/")
+            stars_str = (match.group(3) or "0").replace(",", "")
+
+            if not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo_full):
+                continue
+            if repo_full in seen:
+                continue
+            seen.add(repo_full)
+
+            try:
+                prev_stars = int(stars_str)
+            except ValueError:
+                prev_stars = 0
+
+            repos.append((repo_full, display_name, prev_stars))
+
+        log.info(
+            f"[PreviousReportTracker] 从行动建议中解析到 {len(repos)} 个项目: "
+            f"{[r[0] for r in repos]}"
+        )
+        return repos
+
+    def build_verification_context(self, current_date: str) -> str:
+        """构建上期行动建议验证上下文，供写作层生成验证段落。
+
+        流程：
+        1. 找到最近一期报告
+        2. 从「本周行动建议」Section 解析推荐项目
+        3. 通过 GitHub API 查询当前星数，计算增长率
+        4. 生成验证结论（✓ 准确 / ~ 持平 / ✗ 偏差）
+
+        Args:
+            current_date: 当前报告日期，格式 YYYY-MM-DD
+
+        Returns:
+            格式化的验证上下文字符串。
+            若无数据或解析失败，返回空字符串（写作层将跳过验证段落）。
+        """
+        try:
+            # 1. 找到最近一期报告
+            prev_report_path, prev_date = self._find_previous_report(current_date)
+            if prev_report_path is None:
+                log.info("[PreviousReportTracker] 未找到历史报告，跳过行动建议验证")
+                return ""
+
+            # 2. 从行动建议 Section 解析项目
+            action_repos = self.parse_action_suggestions(prev_report_path)
+            if not action_repos:
+                log.info(
+                    "[PreviousReportTracker] 行动建议中未找到可追踪的项目，跳过验证"
+                )
+                return ""
+
+            # 3. 查询当前星数
+            tracked = self._fetch_current_stars(action_repos, prev_date)
+            if not tracked:
+                log.warning("[PreviousReportTracker] 行动建议项目星数查询全部失败")
+                return ""
+
+            # 4. 生成验证结论
+            lines = [
+                f"## 上期行动建议验证（{prev_date} → {current_date}）",
+                "",
+                "以下是上期「本周行动建议」中推荐项目的实际表现，请在「上期回顾」Section 中加入验证段落。",
+                "",
+                "### 验证结果",
+            ]
+
+            for repo in tracked:
+                # 计算增长率
+                growth_pct = (
+                    repo.growth / repo.prev_stars * 100 if repo.prev_stars > 0 else 0.0
+                )
+                growth_sign = "+" if repo.growth >= 0 else ""
+
+                # 评估标准：增长 > 10% 为 ✓ 准确，< 0% 为 ✗ 偏差，其余为 ~ 持平
+                if growth_pct > 10:
+                    verdict = "✓ 准确"
+                    verdict_note = f"增长 {growth_sign}{growth_pct:.1f}%，超出预期"
+                elif growth_pct < 0:
+                    verdict = "✗ 偏差"
+                    verdict_note = f"增长 {growth_pct:.1f}%，低于预期"
+                else:
+                    verdict = "~ 持平"
+                    verdict_note = f"增长 {growth_sign}{growth_pct:.1f}%，基本符合预期"
+
+                lines.extend(
+                    [
+                        f"- **{repo.name}** (`{repo.repo}`) — {verdict}",
+                        f"  - 推荐时星数：⭐ {repo.prev_stars:,}",
+                        f"  - 当前星数：⭐ {repo.curr_stars:,}（{growth_sign}{repo.growth:,}）",
+                        f"  - 评估：{verdict_note}",
+                        "",
+                    ]
+                )
+
+            lines.extend(
+                [
+                    "### 验证撰写指引",
+                    "- 在「上期回顾」Section 末尾新增「行动建议验证」小节",
+                    "- 格式：「上期推荐 {项目名}，实际增长 {数字}（{verdict}）」",
+                    "- 如果预测偏差，需诚实说明原因，不要美化",
+                ]
+            )
+
+            context = "\n".join(lines)
+            log.info(
+                f"[PreviousReportTracker] 行动建议验证上下文生成完成，"
+                f"追踪 {len(tracked)} 个项目"
+            )
+            return context
+
+        except Exception as e:
+            log.error(f"[PreviousReportTracker] 行动建议验证失败: {e}")
+            return ""
