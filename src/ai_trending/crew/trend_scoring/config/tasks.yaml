@@ -28,10 +28,22 @@ score_trends_task:
     - category: 项目类别（Agent框架/推理框架/多模态/开发工具/数据处理/模型微调/评测基准/应用集成）
     - scores: 包含 热度/技术前沿性/成长潜力/综合 四个维度评分（各 0-10）
     - one_line_reason: 一句话说明，不超过 30 字，说清楚技术价值或应用场景
-    - story_hook: 故事开篇钩子，不超过 20 字，制造信息差或悬念
-    - technical_detail: 具体技术细节，不超过 25 字，支撑判断
+    - story_hook: 故事开篇钩子，不超过 20 字，制造信息差或悬念；
+      【约束】当 README摘要 非空时，必须从中引用至少一个具体技术名词、数字或对比对象；
+      禁止使用"和X不同，Y支持..."等纯推断式模板句
+    - technical_detail: 具体技术细节，不超过 25 字，支撑判断；
+      【约束】必须包含从 README 或描述中提取的具体技术细节；
+      禁止使用"支持多种功能"、"采用先进技术"等无实质内容的描述
     - target_audience: 谁应该关注，不超过 15 字，明确指向
     - scenario_description: 场景化描述，不超过 25 字
+    - readme_summary: 从输入 github_data 中读取对应项目的 README摘要 字段，原样填入；
+      若该项目无 README摘要 或为空，填 ""
+    - stars_growth_7d: 从输入 github_data 中读取对应项目的 7日增长 字段，原样填入整数；
+      若该项目无 7日增长 数据，填 null
+
+    ## README 引用规则
+    - 如果某项目的 README摘要 非空，story_hook 和 technical_detail 必须引用其中的真实内容
+    - 如果 README摘要 为空或无实质信息，允许基于描述推断，但 story_hook 需标注"（基于描述推断）"
 
     评分标准:
     - 热度: Star 数 >50k=9-10, >20k=7-8, >10k=5-6, >5k=3-4, <5k=1-2
@@ -68,7 +80,7 @@ score_trends_task:
     输出严格 JSON 格式，不要输出任何 JSON 以外的内容。
   expected_output: >
     返回一个符合 TrendScoringOutput 模型的结构化 JSON，包含：
-    - scored_repos: GitHub 项目评分列表（按综合评分从高到低排列）
+    - scored_repos: GitHub 项目评分列表（按综合评分从高到低排列），每个元素含 readme_summary 和 stars_growth_7d 字段
     - scored_news: 新闻评分列表（按影响力评分从高到低排列）
     - daily_summary: 今日趋势洞察汇总（含 top_trend、hot_directions、causal_explanation 等字段）
     所有字段必须基于原始数据，不得虚构。

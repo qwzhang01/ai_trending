@@ -46,6 +46,14 @@ class ScoredRepo(BaseModel):
         default="",
         description="场景化描述，不超过 25 字",
     )
+    readme_summary: str = Field(
+        default="",
+        description="README 摘要（前 300 字），从 github_data 中原样传递，空时为空字符串",
+    )
+    stars_growth_7d: int | None = Field(
+        default=None,
+        description="近 7 日星数增长，从 github_data 中原样传递，无数据时为 null",
+    )
 
 
 class ScoredNews(BaseModel):

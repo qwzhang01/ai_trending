@@ -78,6 +78,16 @@ def format_text_output(
         output += (
             f"**补充**: 命中查询 {repo.get('_match_count', 1)} 次 | 标签 {topics}\n"
         )
+        # 追加 README 摘要（截断到 300 字）
+        readme_raw = repo.get("readme_summary", "") or ""
+        readme_display = readme_raw[:300] if readme_raw else "（暂无）"
+        output += f"**README摘要**: {readme_display}\n"
+        # 追加 7 日星数增长
+        stars_growth = repo.get("stars_growth_7d")
+        growth_display = (
+            f"+{stars_growth}" if stars_growth is not None else "（暂无历史数据）"
+        )
+        output += f"**7日增长**: {growth_display}\n"
         output += f"🔗 {repo.get('html_url', '')}\n\n"
 
     return output
