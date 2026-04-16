@@ -38,9 +38,18 @@ plan_editorial_task:
        - 查询工具后，将重复话题加入排除清单（除非有重大新进展）
 
     5. **今日一句话**：不超过 20 字的判断句，让读者产生"我得看看怎么回事"的冲动
-       - 参考 `get_style_guidance` 后，避免与近期已有句式雷同
+       - 调用 `get_style_guidance` 后，**必须**列出近 7 天的「今日一句话」历史
+       - 逐条对比，说明本次输出与历史的差异点（主题、句式、视角至少有一项不同）
+       - 若相似度过高（如同样是泛化的"AI技术持续演进"类表达），**强制重写**，直到差异明确
+
+    6. **Kill List 验证**（输出前必须执行）：
+       - 列出 `get_topic_history` 返回的 Kill List 中所有条目
+       - 逐条检查：本次「今日一句话」和「头条」是否与 Kill List 中任一条目语义重叠
+       - 在 `kill_list_check` 字段中记录检查结果，格式：
+         "已检查 N 条 Kill List 条目：[条目1] ✅ 无冲突 / ❌ 冲突（已替换为...）"
+       - 若有冲突，**必须替换**后再输出，不得直接输出冲突内容
 
   expected_output: >
     返回符合 EditorialPlan 模型的结构化结果，
-    包含 signal_strength、headline、repo_angles、news_angles、kill_list、today_hook。
+    包含 signal_strength、headline、repo_angles、news_angles、kill_list、today_hook、kill_list_check。
   agent: editorial_planner

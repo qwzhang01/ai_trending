@@ -71,4 +71,3 @@ poetry.lock
 *.temp
 
 metrics/*.json
-.codebuddy

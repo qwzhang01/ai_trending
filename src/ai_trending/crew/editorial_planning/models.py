@@ -67,6 +67,10 @@ class EditorialPlan(BaseModel):
         default="",
         description="今日一句话建议，不超过 20 字，有判断力的句子",
     )
+    kill_list_check: str = Field(
+        default="",
+        description="Kill List 验证结果记录，格式：'已检查 N 条：[条目] ✅ 无冲突 / ❌ 冲突（已替换为...）'",
+    )
 
     def format_for_prompt(self) -> str:
         """将编辑决策格式化为可注入到 Prompt 中的文本。"""

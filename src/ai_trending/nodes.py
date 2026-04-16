@@ -74,9 +74,9 @@ def _merge_token_usage(
 def _decide_signal_strength(scored_repos: list, scored_news: list) -> str:
     """根据评分数据判断今日信号强度。
 
-    规则：
-    - red:    有项目综合分 >= 9.0，或有新闻影响力分 >= 9.0
-    - yellow: 有项目综合分 >= 7.0，或有新闻影响力分 >= 7.0
+    规则（阈值已根据评分层实际打分区间 6-8.5 调整）：
+    - red:    有项目综合分 >= 8.5，或有新闻影响力分 >= 8.5
+    - yellow: 有项目综合分 >= 6.5，或有新闻影响力分 >= 6.5
     - green:  其他情况（平静日）
     """
     max_repo_score = 0.0
@@ -189,9 +189,9 @@ def _build_writing_brief(
         if impact > max_news_score:
             max_news_score = impact
 
-    if max_repo_score >= 9.0 or max_news_score >= 9.0:
+    if max_repo_score >= 8.5 or max_news_score >= 8.5:
         signal = "red"
-    elif max_repo_score >= 7.0 or max_news_score >= 7.0:
+    elif max_repo_score >= 6.5 or max_news_score >= 6.5:
         signal = "yellow"
     else:
         signal = "green"
@@ -402,6 +402,14 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
 
         editorial_plan_text = plan.format_for_prompt()
 
+        # 记录 Kill List 命中检查结果（方便排查 Kill List 是否真正生效）
+        if plan.kill_list_check:
+            log.info(f"[editorial_planning] Kill List 验证结果: {plan.kill_list_check}")
+        else:
+            log.warning(
+                "[editorial_planning] Kill List 验证结果为空，Agent 可能未执行 Kill List 检查"
+            )
+
         # 累加 token 用量到 State
         prev_usage = state.get("token_usage") or {}
         merged_usage = _merge_token_usage(prev_usage, token_usage, "editorial_planning")
@@ -409,6 +417,7 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
         log.info(
             f"[editorial_planning] ⏱ 完成: signal={plan.signal_strength}, "
             f"headline={plan.headline.chosen_item}, "
+            f"kill_list={len(plan.kill_list)} 条, "
             f"token 用量 {token_usage.get('total_tokens', 0)}，"
             f"耗时 {elapsed:.2f}s"
         )
