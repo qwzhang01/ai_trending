@@ -79,6 +79,11 @@
     "datawhalechina/easy-vibe": "2026-04-16",
     "modelcontextprotocol/inspector": "2026-04-16",
     "Leonxlnx/taste-skill": "2026-04-16",
-    "matt1398/claude-devtools": "2026-04-16"
+    "matt1398/claude-devtools": "2026-04-16",
+    "openai/openai-agents-python": "2026-04-17",
+    "lsdefine/GenericAgent": "2026-04-17",
+    "can1357/oh-my-pi": "2026-04-17",
+    "firecrawl/firecrawl": "2026-04-17",
+    "microsoft/mcp-for-beginners": "2026-04-17"
   }
 }
