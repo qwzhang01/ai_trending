@@ -204,8 +204,19 @@ def _build_writing_brief(
         headline_candidate = top_repos[0].name
         headline_story_hook = top_repos[0].story_hook
 
+    # 根据 signal_strength 映射 report_template
+    # red → deep-dive（深度分析），yellow → standard（标准），green → review（回顾）
+    # 未知值时兜底为 standard
+    _template_map = {
+        "red": "deep-dive",
+        "yellow": "standard",
+        "green": "review",
+    }
+    report_template = _template_map.get(signal, "standard")
+
     brief = WritingBrief(
         signal_strength_suggestion=signal,
+        report_template=report_template,
         headline_candidate=headline_candidate,
         headline_story_hook=headline_story_hook,
         top_repos=top_repos,
@@ -557,6 +568,7 @@ def write_report_node(state: dict[str, Any]) -> dict[str, Any]:
             style_guidance=style_guidance,
             recent_hooks=recent_hooks,
             action_verification_context=action_verification_context,
+            report_template=writing_brief.report_template,
         )
         t_crew_done = time.perf_counter()
 
@@ -732,8 +744,73 @@ def quality_review_node(state: dict[str, Any]) -> dict[str, Any]:
         except Exception as e:
             log.warning(f"[quality_review] DecisionMemory 记录失败，不影响发布: {e}")
 
+        # 构建质量置信度徽章并追加到报告末尾（任务 4.1 / 4.2 / 4.3）
+        quality_badge = ""
+        updated_report_content = report_content
+        try:
+            total_checks = 18
+            # 估算通过检查项数
+            badge_passed = max(
+                0,
+                total_checks
+                - review_result.error_count * 3
+                - review_result.warning_count,
+            )
+
+            # 4.2 提取最高 severity 的前 2 条问题，合并为不超过 30 字的摘要
+            severity_order = {"error": 0, "warning": 1, "info": 2}
+            sorted_issues = sorted(
+                review_result.issues,
+                key=lambda x: severity_order.get(x.severity, 99),
+            )
+            top_issues = sorted_issues[:2]
+            if top_issues:
+                issue_summary = "；".join(i.description[:12] for i in top_issues)
+                # 截断到 30 字
+                if len(issue_summary) > 30:
+                    issue_summary = issue_summary[:30]
+            else:
+                issue_summary = ""
+
+            # 4.1 根据通过率阈值选择徽章模板
+            if badge_passed >= 15 and review_result.error_count == 0:
+                # 高置信度
+                quality_badge = (
+                    f"\n\n## 本期置信度\n"
+                    f"✅ 高置信度（{badge_passed}/{total_checks}）· 无事实核对问题"
+                )
+            elif badge_passed >= 10:
+                # 中置信度
+                risk_text = (
+                    f"主要风险：{issue_summary}"
+                    if issue_summary
+                    else "存在少量 warning"
+                )
+                quality_badge = (
+                    f"\n\n## 本期置信度\n"
+                    f"🟡 中置信度（{badge_passed}/{total_checks}）· {risk_text}"
+                )
+            else:
+                # 低置信度
+                risk_text = issue_summary if issue_summary else "存在 error 级问题"
+                quality_badge = (
+                    f"\n\n## 本期置信度\n"
+                    f"⚠️ 低置信度（{badge_passed}/{total_checks}）· {risk_text}"
+                )
+
+            # 4.3 追加到 report_content 末尾
+            updated_report_content = report_content + quality_badge
+            log.info(
+                f"[quality_review] quality_badge 已生成并追加到报告末尾: "
+                f"passed={badge_passed}/{total_checks}"
+            )
+        except Exception as e:
+            log.warning(f"[quality_review] quality_badge 构建失败，不影响发布: {e}")
+
         result: dict[str, Any] = {
             "quality_review": review_summary,
+            "quality_badge": quality_badge,
+            "report_content": updated_report_content,
             "token_usage": merged_usage,
         }
         if errors:

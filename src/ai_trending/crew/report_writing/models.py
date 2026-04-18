@@ -77,6 +77,10 @@ class WritingBrief(BaseModel):
         default="yellow",
         description="建议的信号强度：'red'/'yellow'/'green'，基于今日数据重要性",
     )
+    report_template: str = Field(
+        default="standard",
+        description="报告模板类型：'deep-dive'（深度分析）/ 'standard'（标准）/ 'review'（回顾），由 signal_strength 映射决定",
+    )
     headline_candidate: str = Field(
         default="", description="建议的今日头条项目/新闻名称"
     )
@@ -235,4 +239,8 @@ class ReportOutput(BaseModel):
     validation_issues: list[str] = Field(
         default_factory=list,
         description="格式校验问题列表，空列表表示通过校验。",
+    )
+    quality_badge: str = Field(
+        default="",
+        description="质量徽章字符串，由 quality_review_node 根据通过率生成并追加到报告末尾；为空时不追加。",
     )

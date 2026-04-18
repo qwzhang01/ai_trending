@@ -372,6 +372,7 @@ class ReportWritingCrew:
         style_guidance: str = "",
         recent_hooks: str = "",
         action_verification_context: str = "",
+        report_template: str = "standard",
     ) -> tuple[ReportOutput, dict[str, int]]:
         """对外公开入口：执行日报撰写，返回 (ReportOutput, token_usage)。
 
@@ -434,6 +435,7 @@ class ReportWritingCrew:
                     or "（无历史记录，今日一句话需自行生成有观点的判断句）",
                     "action_verification_context": action_verification_context
                     or "（无行动建议验证数据，请省略「行动建议验证」小节）",
+                    "report_template": report_template or "standard",
                 }
             )
 

@@ -58,6 +58,10 @@ class ScoredRepo(BaseModel):
         default="🔵 普通",
         description="项目生命周期标签：🌱 新生 / 🚀 爆发 / 📈 稳健 / ⚠️ 异常 / 🔵 普通",
     )
+    audience_tag: str = Field(
+        default="general",
+        description="目标读者群体：developer（技术实现相关）/ product（产品功能相关）/ investor（融资/市场相关）/ general（通用）",
+    )
 
 
 class ScoredNews(BaseModel):

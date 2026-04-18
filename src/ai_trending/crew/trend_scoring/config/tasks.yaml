@@ -46,6 +46,13 @@ score_trends_task:
       3. 📈 稳健：stars > 10000 且 stars_growth_7d > 100（成熟项目持续增长）
       4. ⚠️ 异常：stars > 5000 且 stars_growth_7d < 0（高星项目星数下降）
       5. 🔵 普通：不满足以上任何条件（默认值）
+    - audience_tag: 目标读者群体标签，从以下四个值中选择最匹配的一个：
+      - developer：项目以技术实现为核心，主要受众为工程师/开发者（如底层框架、推理引擎、开发工具）
+      - product：项目以产品功能为核心，主要受众为产品经理/设计师（如应用平台、工作流工具、用户界面）
+      - investor：项目与商业化、融资、市场规模密切相关，主要受众为投资人/商业决策者
+      - general：不明显偏向以上任何一类受众的通用项目
+      【重要】general 为兜底选项，不得作为首选；当项目有明显技术/产品/商业特征时，必须优先选择 developer / product / investor；
+      只有在确实无法判断受众偏向时，才使用 general
 
     ## README 引用规则
     - 如果某项目的 README摘要 非空，story_hook 和 technical_detail 必须引用其中的真实内容
