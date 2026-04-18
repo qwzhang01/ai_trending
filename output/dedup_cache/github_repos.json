@@ -84,6 +84,11 @@
     "lsdefine/GenericAgent": "2026-04-17",
     "can1357/oh-my-pi": "2026-04-17",
     "firecrawl/firecrawl": "2026-04-17",
-    "microsoft/mcp-for-beginners": "2026-04-17"
+    "microsoft/mcp-for-beginners": "2026-04-17",
+    "holaboss-ai/holaOS": "2026-04-18",
+    "daytonaio/daytona": "2026-04-18",
+    "DeusData/codebase-memory-mcp": "2026-04-18",
+    "sooperset/mcp-atlassian": "2026-04-18",
+    "steipete/CodexBar": "2026-04-18"
   }
 }
