@@ -118,6 +118,7 @@ class EditorialPlanningCrew:
         scoring_result: str = "",
         current_date: str = "",
         topic_context: str = "",  # 保留参数兼容性，不再推送到 Prompt，Agent 自行调用工具
+        news_data: str = "",  # 原始新闻数据，用于共振检测
     ) -> tuple[EditorialPlan, dict[str, int]]:
         """执行编辑部选题规划。
 
@@ -137,6 +138,7 @@ class EditorialPlanningCrew:
                 inputs={
                     "scoring_summary": scoring_summary,
                     "current_date": current_date,
+                    "news_data": news_data or "无新闻数据",
                     # topic_context 不再推送到 Prompt，Agent 通过工具主动获取
                 }
             )

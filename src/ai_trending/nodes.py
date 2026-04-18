@@ -154,6 +154,7 @@ def _build_writing_brief(
                 target_audience=repo_data.get("target_audience", ""),
                 suggested_angle=angle,
                 one_line_reason=repo_data.get("one_line_reason", ""),
+                lifecycle_tag=repo_data.get("lifecycle_tag", "🔵 普通"),
             )
         )
 
@@ -370,6 +371,9 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
     """
     current_date = state.get("current_date", "")
     scoring_result = state.get("scoring_result", "{}")
+    # 获取原始新闻数据，格式化后传入编辑策划层用于共振检测
+    raw_news_data = state.get("news_data", "")
+    news_data_for_plan = raw_news_data[:3000] if raw_news_data else "无新闻数据"
 
     t0 = time.perf_counter()
     log.info(f"[editorial_planning] ⏱ 开始编辑选题规划 ({current_date})")
@@ -397,6 +401,7 @@ def editorial_planning_node(state: dict[str, Any]) -> dict[str, Any]:
             scoring_result=scoring_result,
             current_date=current_date,
             topic_context=topic_context,
+            news_data=news_data_for_plan,
         )
         elapsed = time.perf_counter() - t0
 

@@ -8,6 +8,10 @@ plan_editorial_task:
 
     {scoring_summary}
 
+    ## 今日原始新闻数据（用于共振检测）
+
+    {news_data}
+
     ## 决策任务
 
     基于以上评分数据，做出以下编辑决策。
@@ -49,7 +53,20 @@ plan_editorial_task:
          "已检查 N 条 Kill List 条目：[条目1] ✅ 无冲突 / ❌ 冲突（已替换为...）"
        - 若有冲突，**必须替换**后再输出，不得直接输出冲突内容
 
+    7. **共振检测**（输出 resonance_signals 字段）：
+       - 对比「今日原始新闻数据」中的新闻关键词与「今日评分数据」中的项目关键词
+       - 找出同时出现在新闻标题和项目名称/描述中的共同关键词
+       - 共振强度规则：
+         - strong：同一关键词在 ≥2 条新闻中出现，且对应 ≥1 个项目
+         - moderate：同一关键词在 1 条新闻中出现，且对应 ≥1 个项目
+       - 在 `resonance_signals` 字段中输出共振信号列表，每条包含：
+         - keyword: 触发共振的关键词
+         - repo_names: 与该关键词相关的项目名称列表
+         - news_titles: 与该关键词相关的新闻标题列表
+         - strength: "strong" 或 "moderate"
+       - 若无共振信号，输出空列表 []
+
   expected_output: >
     返回符合 EditorialPlan 模型的结构化结果，
-    包含 signal_strength、headline、repo_angles、news_angles、kill_list、today_hook、kill_list_check。
+    包含 signal_strength、headline、repo_angles、news_angles、kill_list、today_hook、kill_list_check、resonance_signals。
   agent: editorial_planner

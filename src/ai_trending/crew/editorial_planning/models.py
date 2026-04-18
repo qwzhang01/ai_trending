@@ -8,6 +8,22 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class ResonanceSignal(BaseModel):
+    """新闻与项目的共振信号。"""
+
+    keyword: str = Field(default="", description="触发共振的关键词")
+    repo_names: list[str] = Field(
+        default_factory=list, description="与该关键词相关的项目名称列表"
+    )
+    news_titles: list[str] = Field(
+        default_factory=list, description="与该关键词相关的新闻标题列表"
+    )
+    strength: str = Field(
+        default="moderate",
+        description="共振强度：'strong'（≥2条新闻）/ 'moderate'（1条新闻）",
+    )
+
+
 class HeadlineDecision(BaseModel):
     """头条选择决策。"""
 
@@ -70,6 +86,10 @@ class EditorialPlan(BaseModel):
     kill_list_check: str = Field(
         default="",
         description="Kill List 验证结果记录，格式：'已检查 N 条：[条目] ✅ 无冲突 / ❌ 冲突（已替换为...）'",
+    )
+    resonance_signals: list[ResonanceSignal] = Field(
+        default_factory=list,
+        description="新闻与项目的共振信号列表，由编辑策划层检测生成",
     )
 
     def format_for_prompt(self) -> str:

@@ -54,6 +54,10 @@ class ScoredRepo(BaseModel):
         default=None,
         description="近 7 日星数增长，从 github_data 中原样传递，无数据时为 null",
     )
+    lifecycle_tag: str = Field(
+        default="🔵 普通",
+        description="项目生命周期标签：🌱 新生 / 🚀 爆发 / 📈 稳健 / ⚠️ 异常 / 🔵 普通",
+    )
 
 
 class ScoredNews(BaseModel):

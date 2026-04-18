@@ -36,6 +36,10 @@ class RepoBrief(BaseModel):
     one_line_reason: str = Field(
         default="", description="入选理由，不超过 30 字（来自评分层）"
     )
+    lifecycle_tag: str = Field(
+        default="🔵 普通",
+        description="项目生命周期标签：🌱 新生 / 🚀 爆发 / 📈 稳健 / ⚠️ 异常 / 🔵 普通（来自评分层）",
+    )
 
 
 class NewsBrief(BaseModel):
@@ -146,7 +150,9 @@ class WritingBrief(BaseModel):
                     else ""
                 )
                 # 去掉 url 和 language：写作层只需名称和数据，url 发布层才用
-                lines.append(f"\n**{i}. {repo.name}** ⭐ {repo.stars}{growth}")
+                lines.append(
+                    f"\n**{i}. {repo.name}** {repo.lifecycle_tag} ⭐ {repo.stars}{growth}"
+                )
                 if repo.one_line_reason:
                     lines.append(f"  入选: {repo.one_line_reason}")
                 if repo.story_hook:

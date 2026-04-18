@@ -40,6 +40,12 @@ score_trends_task:
       若该项目无 README摘要 或为空，填 ""
     - stars_growth_7d: 从输入 github_data 中读取对应项目的 7日增长 字段，原样填入整数；
       若该项目无 7日增长 数据，填 null
+    - lifecycle_tag: 项目生命周期标签，按以下规则按优先级顺序判断（取第一个满足的）：
+      1. 🌱 新生：stars < 1000 且 stars_growth_7d > 200（新兴项目快速起步）
+      2. 🚀 爆发：stars_growth_7d > 1000 或（stars_growth_7d > 500 且 stars < 10000）（短期爆发式增长）
+      3. 📈 稳健：stars > 10000 且 stars_growth_7d > 100（成熟项目持续增长）
+      4. ⚠️ 异常：stars > 5000 且 stars_growth_7d < 0（高星项目星数下降）
+      5. 🔵 普通：不满足以上任何条件（默认值）
 
     ## README 引用规则
     - 如果某项目的 README摘要 非空，story_hook 和 technical_detail 必须引用其中的真实内容
