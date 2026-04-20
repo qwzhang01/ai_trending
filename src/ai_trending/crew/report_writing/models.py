@@ -185,9 +185,17 @@ class WritingBrief(BaseModel):
         if self.top_news:
             lines.append("### 推荐新闻")
             for i, news in enumerate(self.top_news, 1):
-                label = f"[{news.credibility_label}]" if news.credibility_label else ""
-                cat = f"[{news.category}]" if news.category else ""
-                lines.append(f"\n**{i}.** {label}{cat} {news.title}")
+                # 从 credibility_label 中提取 emoji（取第一个字符），与 category 合并为单标签
+                emoji = (
+                    news.credibility_label.split()[0] if news.credibility_label else ""
+                )
+                tag = (
+                    f"{emoji} {news.category}".strip()
+                    if (emoji or news.category)
+                    else ""
+                )
+                prefix = f"{tag} " if tag else ""
+                lines.append(f"\n**{i}.** {prefix}{news.title}")
                 lines.append(f"  来源: {news.source}")
                 if news.so_what_analysis:
                     lines.append(f"  So What: {news.so_what_analysis}")
