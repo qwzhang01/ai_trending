@@ -94,6 +94,11 @@
     "ForLoopCodes/contextplus": "2026-04-19",
     "OpenMOSS/MOSS-TTS": "2026-04-19",
     "TeleAI-UAGI/telemem": "2026-04-19",
-    "1186258278/OpenClawChineseTranslation": "2026-04-19"
+    "1186258278/OpenClawChineseTranslation": "2026-04-19",
+    "anomalyco/opencode": "2026-04-20",
+    "browser-use/browser-use": "2026-04-20",
+    "ValueCell-ai/ClawX": "2026-04-20",
+    "shanraisshan/claude-code-best-practice": "2026-04-20",
+    "langflow-ai/langflow": "2026-04-20"
   }
 }
