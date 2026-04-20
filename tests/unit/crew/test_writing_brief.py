@@ -281,35 +281,35 @@ class TestDecideSignalStrength:
     """测试信号强度判断函数。"""
 
     def test_red_on_high_repo_score(self):
-        """项目综合分 >= 9.0 时返回 red。"""
+        """项目综合分 >= 8.5 时返回 red。"""
         repo = MagicMock()
-        repo.scores = {"综合": 9.5}
+        repo.scores = {"综合": 8.5}
         result = _decide_signal_strength([repo], [])
         assert result == "red"
 
     def test_red_on_high_news_score(self):
-        """新闻影响力分 >= 9.0 时返回 red。"""
+        """新闻影响力分 >= 8.5 时返回 red。"""
         news = MagicMock()
-        news.impact_score = 9.0
+        news.impact_score = 8.5
         result = _decide_signal_strength([], [news])
         assert result == "red"
 
     def test_yellow_on_medium_score(self):
-        """项目综合分 >= 7.0 但 < 9.0 时返回 yellow。"""
+        """项目综合分 >= 6.5 但 < 8.5 时返回 yellow。"""
         repo = MagicMock()
         repo.scores = {"综合": 7.5}
         result = _decide_signal_strength([repo], [])
         assert result == "yellow"
 
     def test_yellow_on_medium_news_score(self):
-        """新闻影响力分 >= 7.0 但 < 9.0 时返回 yellow。"""
+        """新闻影响力分 >= 6.5 但 < 8.5 时返回 yellow。"""
         news = MagicMock()
         news.impact_score = 7.5
         result = _decide_signal_strength([], [news])
         assert result == "yellow"
 
     def test_green_on_low_scores(self):
-        """所有分数 < 7.0 时返回 green。"""
+        """所有分数 < 6.5 时返回 green。"""
         repo = MagicMock()
         repo.scores = {"综合": 5.0}
         news = MagicMock()
@@ -325,7 +325,7 @@ class TestDecideSignalStrength:
     def test_uses_overall_key(self):
         """支持 'overall' 作为 scores 字典的 key。"""
         repo = MagicMock()
-        repo.scores = {"overall": 9.0}
+        repo.scores = {"overall": 8.5}
         result = _decide_signal_strength([repo], [])
         assert result == "red"
 
@@ -410,14 +410,14 @@ class TestBuildWritingBrief:
     def test_signal_strength_from_scores(self, sample_scoring_json):
         """信号强度应基于评分数据自动判断。"""
         brief = _build_writing_brief(sample_scoring_json, "", "")
-        # 最高综合分 8.5，最高新闻分 8.0 → yellow
-        assert brief.signal_strength_suggestion == "yellow"
+        # 最高综合分 8.5，最高新闻分 8.0 → red（spec: ≥8.5 为 red）
+        assert brief.signal_strength_suggestion == "red"
 
     def test_signal_strength_red(self):
         """高分数据应判断为 red。"""
         data = json.dumps(
             {
-                "scored_repos": [{"name": "hot", "scores": {"综合": 9.5}}],
+                "scored_repos": [{"name": "hot", "scores": {"综合": 8.5}}],
                 "scored_news": [],
                 "daily_summary": {},
             }
@@ -429,8 +429,8 @@ class TestBuildWritingBrief:
         """低分数据应判断为 green。"""
         data = json.dumps(
             {
-                "scored_repos": [{"name": "meh", "scores": {"综合": 3.0}}],
-                "scored_news": [{"title": "小事", "impact_score": 2.0}],
+                "scored_repos": [{"name": "meh", "scores": {"综合": 5.0}}],
+                "scored_news": [{"title": "小事", "impact_score": 4.0}],
                 "daily_summary": {},
             }
         )
