@@ -104,6 +104,11 @@
     "OpenHands/OpenHands": "2026-04-21",
     "chrisryugj/korean-law-mcp": "2026-04-21",
     "github/spec-kit": "2026-04-21",
-    "jxnxts/mcp-brasil": "2026-04-21"
+    "jxnxts/mcp-brasil": "2026-04-21",
+    "modelcontextprotocol/servers": "2026-04-22",
+    "ollama/ollama": "2026-04-22",
+    "anthropics/skills": "2026-04-22",
+    "supabase/supabase": "2026-04-22",
+    "KimYx0207/Claude-Code-x-OpenClaw-Guide-Zh": "2026-04-22"
   }
 }
