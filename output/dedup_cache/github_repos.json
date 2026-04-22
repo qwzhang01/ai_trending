@@ -109,6 +109,10 @@
     "ollama/ollama": "2026-04-22",
     "anthropics/skills": "2026-04-22",
     "supabase/supabase": "2026-04-22",
-    "KimYx0207/Claude-Code-x-OpenClaw-Guide-Zh": "2026-04-22"
+    "KimYx0207/Claude-Code-x-OpenClaw-Guide-Zh": "2026-04-22",
+    "EvoMap/evolver": "2026-04-23",
+    "kyegomez/OpenMythos": "2026-04-23",
+    "opendatalab/MinerU": "2026-04-23",
+    "covibes/zeroshot": "2026-04-23"
   }
 }
