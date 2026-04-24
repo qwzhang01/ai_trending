@@ -113,6 +113,10 @@
     "EvoMap/evolver": "2026-04-23",
     "kyegomez/OpenMythos": "2026-04-23",
     "opendatalab/MinerU": "2026-04-23",
-    "covibes/zeroshot": "2026-04-23"
+    "covibes/zeroshot": "2026-04-23",
+    "anthropics/claude-code": "2026-04-24",
+    "comet-ml/opik": "2026-04-24",
+    "flashinfer-ai/flashinfer": "2026-04-24",
+    "Manavarya09/design-extract": "2026-04-24"
   }
 }
