@@ -117,6 +117,11 @@
     "anthropics/claude-code": "2026-04-24",
     "comet-ml/opik": "2026-04-24",
     "flashinfer-ai/flashinfer": "2026-04-24",
-    "Manavarya09/design-extract": "2026-04-24"
+    "Manavarya09/design-extract": "2026-04-24",
+    "kvcache-ai/ktransformers": "2026-04-24",
+    "lintsinghua/claude-code-book": "2026-04-24",
+    "datagouv/datagouv-mcp": "2026-04-24",
+    "llmsresearch/paperbanana": "2026-04-24",
+    "microsoft/generative-ai-for-beginners": "2026-04-24"
   }
 }
