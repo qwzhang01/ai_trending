@@ -130,6 +130,10 @@
     "JackChen-me/open-multi-agent": "2026-04-26",
     "superset-sh/superset": "2026-04-26",
     "Tencent/WeKnora": "2026-04-26",
-    "superradcompany/microsandbox": "2026-04-26"
+    "superradcompany/microsandbox": "2026-04-26",
+    "google/adk-go": "2026-04-27",
+    "jo-inc/camofox-browser": "2026-04-27",
+    "microsoft/skills": "2026-04-27",
+    "rocketride-org/rocketride-server": "2026-04-27"
   }
 }
