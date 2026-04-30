@@ -144,6 +144,11 @@
     "Gitlawb/openclaude": "2026-04-30",
     "ModelEngine-Group/nexent": "2026-04-30",
     "alibaba/MNN": "2026-04-30",
-    "FireRedTeam/FireRed-OpenStoryline": "2026-04-30"
+    "FireRedTeam/FireRed-OpenStoryline": "2026-04-30",
+    "RightNow-AI/openfang": "2026-05-01",
+    "bytedance/UI-TARS-desktop": "2026-05-01",
+    "aaif-goose/goose": "2026-05-01",
+    "anthropics/claude-plugins-official": "2026-05-01",
+    "tirth8205/code-review-graph": "2026-05-01"
   }
 }
