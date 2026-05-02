@@ -1,10 +1,5 @@
 {
   "seen": {
-    "ZhuLinsen/daily_stock_analysis": "2026-04-01",
-    "yusufkaraaslan/Skill_Seekers": "2026-04-01",
-    "googleworkspace/cli": "2026-04-01",
-    "jackwener/opencli": "2026-04-01",
-    "affaan-m/everything-claude-code": "2026-04-01",
     "ykdojo/claude-code-tips": "2026-04-02",
     "PrefectHQ/fastmcp": "2026-04-02",
     "zeroclaw-labs/zeroclaw": "2026-04-02",
@@ -149,6 +144,11 @@
     "bytedance/UI-TARS-desktop": "2026-05-01",
     "aaif-goose/goose": "2026-05-01",
     "anthropics/claude-plugins-official": "2026-05-01",
-    "tirth8205/code-review-graph": "2026-05-01"
+    "tirth8205/code-review-graph": "2026-05-01",
+    "googleworkspace/cli": "2026-05-02",
+    "ZhuLinsen/daily_stock_analysis": "2026-05-02",
+    "affaan-m/everything-claude-code": "2026-05-02",
+    "lobehub/lobehub": "2026-05-02",
+    "rohitg00/ai-engineering-from-scratch": "2026-05-02"
   }
 }
