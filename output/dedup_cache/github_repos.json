@@ -1,20 +1,5 @@
 {
   "seen": {
-    "ykdojo/claude-code-tips": "2026-04-02",
-    "PrefectHQ/fastmcp": "2026-04-02",
-    "zeroclaw-labs/zeroclaw": "2026-04-02",
-    "n8n-io/n8n": "2026-04-02",
-    "Snailclimb/JavaGuide": "2026-04-02",
-    "HKUDS/DeepTutor": "2026-04-02",
-    "activepieces/activepieces": "2026-04-02",
-    "mcp-use/mcp-use": "2026-04-02",
-    "alibaba/OpenSandbox": "2026-04-02",
-    "Panniantong/Agent-Reach": "2026-04-02",
-    "saturndec/waoowaoo": "2026-04-02",
-    "GLips/Figma-Context-MCP": "2026-04-02",
-    "googleapis/genai-toolbox": "2026-04-02",
-    "awslabs/mcp": "2026-04-02",
-    "iflytek/astron-agent": "2026-04-02",
     "google-gemini/gemini-cli": "2026-04-04",
     "microsoft/playwright-mcp": "2026-04-04",
     "webiny/webiny-js": "2026-04-04",
@@ -149,6 +134,11 @@
     "ZhuLinsen/daily_stock_analysis": "2026-05-02",
     "affaan-m/everything-claude-code": "2026-05-02",
     "lobehub/lobehub": "2026-05-02",
-    "rohitg00/ai-engineering-from-scratch": "2026-05-02"
+    "rohitg00/ai-engineering-from-scratch": "2026-05-02",
+    "ykdojo/claude-code-tips": "2026-05-03",
+    "zeroclaw-labs/zeroclaw": "2026-05-03",
+    "alibaba/OpenSandbox": "2026-05-03",
+    "saturndec/waoowaoo": "2026-05-03",
+    "Panniantong/Agent-Reach": "2026-05-03"
   }
 }
