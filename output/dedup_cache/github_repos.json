@@ -139,6 +139,11 @@
     "zeroclaw-labs/zeroclaw": "2026-05-03",
     "alibaba/OpenSandbox": "2026-05-03",
     "saturndec/waoowaoo": "2026-05-03",
-    "Panniantong/Agent-Reach": "2026-05-03"
+    "Panniantong/Agent-Reach": "2026-05-03",
+    "activepieces/activepieces": "2026-05-04",
+    "PrefectHQ/fastmcp": "2026-05-04",
+    "n8n-io/n8n": "2026-05-04",
+    "Snailclimb/JavaGuide": "2026-05-04",
+    "thedotmack/claude-mem": "2026-05-04"
   }
 }
