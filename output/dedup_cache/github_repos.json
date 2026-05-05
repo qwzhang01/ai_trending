@@ -144,6 +144,11 @@
     "microsoft/playwright-mcp": "2026-05-05",
     "google-gemini/gemini-cli": "2026-05-05",
     "hiyouga/LlamaFactory": "2026-05-05",
-    "sansan0/TrendRadar": "2026-05-05"
+    "sansan0/TrendRadar": "2026-05-05",
+    "mcp-use/mcp-use": "2026-05-06",
+    "GLips/Figma-Context-MCP": "2026-05-06",
+    "awslabs/mcp": "2026-05-06",
+    "0x4m4/hexstrike-ai": "2026-05-06",
+    "webiny/webiny-js": "2026-05-06"
   }
 }
