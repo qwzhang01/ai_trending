@@ -1,10 +1,5 @@
 {
   "seen": {
-    "santifer/career-ops": "2026-04-07",
-    "mksglu/context-mode": "2026-04-07",
-    "microsoft/agent-framework": "2026-04-07",
-    "msitarzewski/agency-agents": "2026-04-07",
-    "modelcontextprotocol/registry": "2026-04-07",
     "kreuzberg-dev/kreuzberg": "2026-04-08",
     "milla-jovovich/mempalace": "2026-04-08",
     "ruvnet/ruflo": "2026-04-08",
@@ -149,6 +144,11 @@
     "waooAI/waoowaoo": "2026-05-07",
     "wanshuiyin/Auto-claude-code-research-in-sleep": "2026-05-07",
     "casdoor/casdoor": "2026-05-07",
-    "forloopcodes/contextplus": "2026-05-07"
+    "forloopcodes/contextplus": "2026-05-07",
+    "mksglu/context-mode": "2026-05-08",
+    "modelcontextprotocol/registry": "2026-05-08",
+    "microsoft/agent-framework": "2026-05-08",
+    "santifer/career-ops": "2026-05-08",
+    "EKKOLearnAI/hermes-web-ui": "2026-05-08"
   }
 }
