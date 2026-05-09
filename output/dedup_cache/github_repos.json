@@ -1,10 +1,5 @@
 {
   "seen": {
-    "jackwener/OpenCLI": "2026-04-09",
-    "NVIDIA/TensorRT-LLM": "2026-04-09",
-    "alibaba/spring-ai-alibaba": "2026-04-09",
-    "firecrawl/firecrawl-mcp-server": "2026-04-09",
-    "jundot/omlx": "2026-04-09",
     "googleapis/mcp-toolbox": "2026-04-10",
     "dataelement/bisheng": "2026-04-10",
     "coze-dev/coze-studio": "2026-04-10",
@@ -149,6 +144,11 @@
     "ruvnet/ruflo": "2026-05-09",
     "kreuzberg-dev/kreuzberg": "2026-05-09",
     "idosal/git-mcp": "2026-05-09",
-    "iflytek/astron-agent": "2026-05-09"
+    "iflytek/astron-agent": "2026-05-09",
+    "jackwener/OpenCLI": "2026-05-10",
+    "firecrawl/firecrawl-mcp-server": "2026-05-10",
+    "alibaba/spring-ai-alibaba": "2026-05-10",
+    "garrytan/gstack": "2026-05-10",
+    "jundot/omlx": "2026-05-10"
   }
 }
