@@ -1,10 +1,5 @@
 {
   "seen": {
-    "MemPalace/mempalace": "2026-04-13",
-    "NousResearch/hermes-agent": "2026-04-13",
-    "wonderwhy-er/DesktopCommanderMCP": "2026-04-13",
-    "yzhao062/pyod": "2026-04-13",
-    "Donchitos/Claude-Code-Game-Studios": "2026-04-13",
     "aiming-lab/MetaClaw": "2026-04-14",
     "Orchestra-Research/AI-Research-SKILLs": "2026-04-14",
     "CursorTouch/Windows-MCP": "2026-04-14",
@@ -149,6 +144,11 @@
     "JuliusBrussee/caveman": "2026-05-13",
     "conductor-oss/conductor": "2026-05-13",
     "hugohe3/ppt-master": "2026-05-13",
-    "netdata/netdata": "2026-05-13"
+    "netdata/netdata": "2026-05-13",
+    "NousResearch/hermes-agent": "2026-05-14",
+    "MemPalace/mempalace": "2026-05-14",
+    "code-yeongyu/oh-my-openagent": "2026-05-14",
+    "wonderwhy-er/DesktopCommanderMCP": "2026-05-14",
+    "yzhao062/pyod": "2026-05-14"
   }
 }
