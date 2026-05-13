@@ -1,10 +1,5 @@
 {
   "seen": {
-    "HKUDS/nanobot": "2026-04-12",
-    "JuliusBrussee/caveman": "2026-04-12",
-    "nullclaw/nullclaw": "2026-04-12",
-    "NoFxAiOS/nofx": "2026-04-12",
-    "hugohe3/ppt-master": "2026-04-12",
     "MemPalace/mempalace": "2026-04-13",
     "NousResearch/hermes-agent": "2026-04-13",
     "wonderwhy-er/DesktopCommanderMCP": "2026-04-13",
@@ -149,6 +144,11 @@
     "ChatLab/ChatLab": "2026-05-12",
     "farion1231/cc-switch": "2026-05-12",
     "dataelement/bisheng": "2026-05-12",
-    "jamiepine/voicebox": "2026-05-12"
+    "jamiepine/voicebox": "2026-05-12",
+    "HKUDS/nanobot": "2026-05-13",
+    "JuliusBrussee/caveman": "2026-05-13",
+    "conductor-oss/conductor": "2026-05-13",
+    "hugohe3/ppt-master": "2026-05-13",
+    "netdata/netdata": "2026-05-13"
   }
 }
