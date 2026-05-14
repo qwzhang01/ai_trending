@@ -1,10 +1,5 @@
 {
   "seen": {
-    "aiming-lab/MetaClaw": "2026-04-14",
-    "Orchestra-Research/AI-Research-SKILLs": "2026-04-14",
-    "CursorTouch/Windows-MCP": "2026-04-14",
-    "aiming-lab/SimpleMem": "2026-04-14",
-    "Narcooo/inkos": "2026-04-14",
     "getsentry/XcodeBuildMCP": "2026-04-15",
     "calesthio/Crucix": "2026-04-15",
     "builderz-labs/mission-control": "2026-04-15",
@@ -149,6 +144,11 @@
     "MemPalace/mempalace": "2026-05-14",
     "code-yeongyu/oh-my-openagent": "2026-05-14",
     "wonderwhy-er/DesktopCommanderMCP": "2026-05-14",
-    "yzhao062/pyod": "2026-05-14"
+    "yzhao062/pyod": "2026-05-14",
+    "rohitg00/agentmemory": "2026-05-15",
+    "Donchitos/Claude-Code-Game-Studios": "2026-05-15",
+    "Narcooo/inkos": "2026-05-15",
+    "CursorTouch/Windows-MCP": "2026-05-15",
+    "aiming-lab/SimpleMem": "2026-05-15"
   }
 }
