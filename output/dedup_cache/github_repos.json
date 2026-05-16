@@ -1,10 +1,5 @@
 {
   "seen": {
-    "getsentry/XcodeBuildMCP": "2026-04-15",
-    "calesthio/Crucix": "2026-04-15",
-    "builderz-labs/mission-control": "2026-04-15",
-    "adongwanai/AgentGuide": "2026-04-15",
-    "koala73/worldmonitor": "2026-04-15",
     "nextlevelbuilder/goclaw": "2026-04-16",
     "datawhalechina/easy-vibe": "2026-04-16",
     "modelcontextprotocol/inspector": "2026-04-16",
@@ -149,6 +144,11 @@
     "Donchitos/Claude-Code-Game-Studios": "2026-05-15",
     "Narcooo/inkos": "2026-05-15",
     "CursorTouch/Windows-MCP": "2026-05-15",
-    "aiming-lab/SimpleMem": "2026-05-15"
+    "aiming-lab/SimpleMem": "2026-05-15",
+    "op7418/guizang-ppt-skill": "2026-05-16",
+    "browser-use/browser-harness": "2026-05-16",
+    "brokermr810/QuantDinger": "2026-05-16",
+    "builderz-labs/mission-control": "2026-05-16",
+    "danny-avila/LibreChat": "2026-05-16"
   }
 }
