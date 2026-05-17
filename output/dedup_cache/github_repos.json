@@ -1,10 +1,5 @@
 {
   "seen": {
-    "nextlevelbuilder/goclaw": "2026-04-16",
-    "datawhalechina/easy-vibe": "2026-04-16",
-    "modelcontextprotocol/inspector": "2026-04-16",
-    "Leonxlnx/taste-skill": "2026-04-16",
-    "matt1398/claude-devtools": "2026-04-16",
     "openai/openai-agents-python": "2026-04-17",
     "lsdefine/GenericAgent": "2026-04-17",
     "can1357/oh-my-pi": "2026-04-17",
@@ -149,6 +144,11 @@
     "browser-use/browser-harness": "2026-05-16",
     "brokermr810/QuantDinger": "2026-05-16",
     "builderz-labs/mission-control": "2026-05-16",
-    "danny-avila/LibreChat": "2026-05-16"
+    "danny-avila/LibreChat": "2026-05-16",
+    "datawhalechina/easy-vibe": "2026-05-17",
+    "Leonxlnx/taste-skill": "2026-05-17",
+    "modelcontextprotocol/inspector": "2026-05-17",
+    "koala73/worldmonitor": "2026-05-17",
+    "bentoml/BentoML": "2026-05-17"
   }
 }
